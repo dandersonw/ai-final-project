@@ -1,0 +1,116 @@
+\documentclass{article}
+
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{cite}
+\usepackage{listings}
+\usepackage{multicol}
+\usepackage{url}
+
+\setlength{\parindent}{4em}
+\setlength{\parskip}{1em}
+
+\title{Project Proposal}
+\date{2018-10-31}
+\author{Derick Anderson and Zack Reiter}
+
+\begin{document}
+
+\pagenumbering{gobble}
+%% \maketitle
+%% \newpage
+%% \pagenumbering{arabic}
+
+\begin{center}
+  \textbf{Project Proposal}
+  
+  \textit{Derick Anderson and Zach Reiter}
+\end{center}
+
+\section*{Problem Description}
+
+We will be classifying playing cards from the game Magic the Gathering (MtG).
+One approach will use a card's art as input,
+treating the problem
+as essentially an image classification task.
+The other approach will use the name of the card,
+treating the problem
+as essentially a text classification task.
+The output will be one of four classes:
+creature, instant, artifact, or enchantment.
+These classes correspond to
+finer designations the cards possess
+rooted in game mechanics.
+
+We plan to also explore
+how the model generalizes across different splits
+of the whole corpus of MtG cards.
+Particularly,
+there exists a concept of ``sets'':
+groups of cards released together that share thematic content and artists.
+
+The problem is interesting because we will get the chance to
+explore if the algorithms can learn generalizable features
+of cards across different sets,
+and to compare the performance based on the text and artwork.
+
+\section*{Algorithms}
+
+For both the image and text classification tasks
+we plan to create deep learning models
+composed of a pretrained portion
+(from some publicly available source)
+and a standard layer on top that will be trained on our data.
+
+For image classification
+we will use a Inception V3
+\cite{rethinking-the-inception-architecture}
+model trained on ImageNet as a base.
+Such a pretrained model
+will have already learned the basic features of many images,
+including curves, lines, and so forth.
+We will replace the last layer of the Inception model
+with one appropriate for the number of classes we have
+and fine-tune the model.
+The basic idea of taking a pretrained ImageNet model
+and fine tuning it for image classification is well understood
+in recent years.
+
+For text classification we will use the pretrained character embeddings
+released with Google's One Billion Word Benchmark
+\cite{one-billion-words}.
+The fundamental idea of using pretrained character embeddings
+is the same as above.
+It might be better if we could leverage a more comprehensive pretrained model,
+but the text on MtG cards is only English-like -- not English.
+On top of the character embeddings
+we will use a standard RNN architecture.
+Embedding plus RNN is a well understood architecture for text classification.
+
+We can find no case of someone else using these algorithms for our problem.
+There are a few cases of people using character based models
+to generate MtG cards.
+There is one notable case
+\footnote{\url{https://github.com/hollisn/MagicTCG_Classification}}
+of using the full text of a card to predict the card's ``color''.
+We can find no case of anyone using the art on the cards.
+
+\section*{Results}
+
+We anticipate that the model will perform better
+when the data is split fully randomly
+than when it is split by set.
+We do not know how the performance of
+classification based on text
+and classification based on artwork will compare.
+
+%% \begin{multicols}{2}
+
+%% \end{multicols}
+\bibliography{doc}{}
+\bibliographystyle{plain}
+\end{document}
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
