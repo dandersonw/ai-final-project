@@ -6,4 +6,10 @@ with open('guildsOfRavnica.json') as f:
 
 cards = data['cards']
 for card in cards:
-    print(card['name'])
+    #print(card['name'])
+
+firstCard = cards[0]
+
+foundCard = srython.cards.Names(firstCard['name'])
+
+print(foundCard)
