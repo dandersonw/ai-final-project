@@ -62,8 +62,8 @@ composed of a pretrained portion
 (from some publicly available source)
 and a standard layer on top that will be trained on our data.
 
-For image classification
-we will use a Inception V3
+Zack will handle the image classification approach.
+He will use a Inception V3
 \cite{rethinking-the-inception-architecture}
 model trained on ImageNet as a base.
 Such a pretrained model
@@ -76,11 +76,10 @@ The basic idea of taking a pretrained ImageNet model
 and fine tuning it for image classification is well understood
 in recent years.
 
-For text classification we will use the pretrained character embeddings
+Derick will handle the text classification approach.
+He will use the pretrained character embeddings
 released with Google's One Billion Word Benchmark
 \cite{one-billion-words}.
-The fundamental idea of using pretrained character embeddings
-is the same as above.
 It might be better if we could leverage a more comprehensive pretrained model,
 but the text on MtG cards is only English-like -- not English.
 On top of the character embeddings
