@@ -23,7 +23,7 @@
 
 \begin{center}
   \textbf{Project Proposal}
-  
+
   \textit{Derick Anderson and Zach Reiter}
 \end{center}
 
@@ -40,7 +40,10 @@ The output will be one of four classes:
 creature, instant, artifact, or enchantment.
 These classes correspond to
 finer designations the cards possess
-rooted in game mechanics.
+rooted in game mechanics. These designations are
+tied to certain ideas that are distinct from each other
+and we want to learn whether these distinctions are
+more consistently communicated through words or images.
 
 We plan to also explore
 how the model generalizes across different splits
@@ -94,14 +97,46 @@ There is one notable case
 of using the full text of a card to predict the card's ``color''.
 We can find no case of anyone using the art on the cards.
 
+\section*{Methodology}
+
+We are going to designate two collections of data to train
+our models on for comparison. MtG ``sets'' are released every
+3 to 4 months and each have an individual style. However, the art
+direction shifts drastically at the set Shards of Alara,
+going from more cartoonish and animated to more realistic.
+Collection 1 will consist of cards from the most recent set,
+"Guilds of Ravnica" to "Shards of Alara". This represents 54 sets
+at about 200 cards each, which is about 10,800 cards total.
+Collection 2 will consist of those sets, as well as
+those going back to one of the earliest sets, Arabian Nights.
+This is 106 sets, or about 21,200 cards total.
+Comparing results from training on these two data collections will
+reveal whether it is better to have a smaller amount of more similar
+data, or a larger set of more disparate data when it comes to classifying
+MtG cards, whose names and artwork have large potential for variation.
+
+We will be selecting random cards from throughout Magic's history as our
+test criteria. We will run them through the models to see whether they are
+correctly classified, and record how many errors each model makes and which
+data collection it was trained on.
+
 \section*{Results}
 
 We anticipate that the model will perform better
 when the data is split fully randomly
 than when it is split by set.
-We do not know how the performance of
-classification based on text
-and classification based on artwork will compare.
+We believe that classification based on text
+will perform better than classification based on
+images because although names consist of ambiguous
+made up words, many of them have real words which
+we believe will be easier to classify than images.
+We also expect that the test model will perform better
+when using Data Collection 2 because it will have more
+consistent data to work with, while the image model
+will perform better being trained on Data Collection 1
+because the additional art from Collection 2 will
+introduce noise because the artworks are so different
+from each other.
 
 %% \begin{multicols}{2}
 
