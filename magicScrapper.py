@@ -1,6 +1,13 @@
 import json
 import scrython
 import urllib.request as request
+import pymysql.cursors
+
+db = pymysql.connect(host="localhost",
+                     user="root",
+                     passwd="root",
+                     db="aiproject",
+                     port=3307)
 
 with open('guildsOfRavnica.json') as f:
     data = json.load(f)
@@ -22,4 +29,26 @@ print(uri)
 
 r = request.Request(uri)
 f = request.urlopen(r)
-print(f.read())
+#print(f.read())
+
+try:
+    with db.cursor() as cursor:
+        sql = "select * from card_types"
+        cursor.execute(sql)
+        result = cursor.fetchall();
+        print(result)
+
+    def getTypeId(typeName):
+        
+
+    with db.cursor() as cursor:
+        sql = "insert into cards (card_uri, card_name, image_data, card_type) values (%s, %s, %s)"
+        cursor.execute(sql, (uri, firstCard['name'], f.read(), firstCard[]))
+    db.commit()
+
+    for type in firstCard['types']:
+        with db.cursor() as cursor:
+            sql = "insert into type_join (card_id, type_id) values (%s, %s)"
+            cursor.execute(sql, (getCardId, results))
+finally:
+    db.close()
