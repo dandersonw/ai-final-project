@@ -99,44 +99,46 @@ We can find no case of anyone using the art on the cards.
 
 \section*{Methodology}
 
-We are going to designate two collections of data to train
-our models on for comparison. MtG ``sets'' are released every
-3 to 4 months and each have an individual style. However, the art
-direction shifts drastically at the set Shards of Alara,
+From the set of all MtG cards we will define three collections.
+MtG ``sets'' are released every
+3 to 4 months and each have an individual style.
+However,
+the art direction shifts drastically at the set Shards of Alara,
 going from more cartoonish and animated to more realistic.
 Collection 1 will consist of cards from the most recent set,
-"Guilds of Ravnica" to "Shards of Alara". This represents 54 sets
-at about 200 cards each, which is about 10,800 cards total.
-Collection 2 will consist of those sets, as well as
-those going back to one of the earliest sets, Arabian Nights.
-This is 106 sets, or about 21,200 cards total.
-Comparing results from training on these two data collections will
-reveal whether it is better to have a smaller amount of more similar
-data, or a larger set of more disparate data when it comes to classifying
-MtG cards, whose names and artwork have large potential for variation.
+``Guilds of Ravnica'' to ``Shards of Alara''.
+That represents 54 sets at about 200 cards each,
+for about 10,800 cards total.
+Collection 2 will consist of sets earlier than ``Shards of Alara''
+going back to one of the earliest sets, ``Arabian Nights''.
+That is 106 sets, or about 21,200 cards total.
+Collection 3 will be the union of the other two collections.
 
-We will be selecting random cards from throughout Magic's history as our
-test criteria. We will run them through the models to see whether they are
-correctly classified, and record how many errors each model makes and which
-data collection it was trained on.
+For evaluation purposes
+we will hold out ten percent of cards uniformly at random
+from all the sets considered
+before dividing into collections.
+For a model trained on the earlier cards,
+evaluating on earlier cards will be ``in-genre''
+and on later cards will be ``out-of-genre''.
+For the model trained on Collection 3
+all cards will be in-genre.
+We will train our model on each collection,
+and report scores on the evaluation data
+broken down by in-genre or out-of-genre.
 
 \section*{Results}
 
-We anticipate that the model will perform better
-when the data is split fully randomly
-than when it is split by set.
-We believe that classification based on text
-will perform better than classification based on
-images because although names consist of ambiguous
-made up words, many of them have real words which
-we believe will be easier to classify than images.
-We also expect that the test model will perform better
-when using Data Collection 2 because it will have more
-consistent data to work with, while the image model
-will perform better being trained on Data Collection 1
-because the additional art from Collection 2 will
-introduce noise because the artworks are so different
-from each other.
+We anticipate that the model will
+consistently perform better on in-genre data.
+Text classification
+will likely perform better than image classification
+on out-of-genre data.
+Although MtG card names have many sparsely present proper nouns
+(viz. fantasy nations or races),
+they also have some consistent patterns based on common nouns
+(soldier, scout, etc).
+Which model will have higher in-genre performance is uncertain.
 
 %% \begin{multicols}{2}
 
