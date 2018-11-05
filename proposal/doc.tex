@@ -23,7 +23,7 @@
 
 \begin{center}
   \textbf{Project Proposal}
-  
+
   \textit{Derick Anderson and Zach Reiter}
 \end{center}
 
@@ -40,7 +40,10 @@ The output will be one of four classes:
 creature, instant, artifact, or enchantment.
 These classes correspond to
 finer designations the cards possess
-rooted in game mechanics.
+rooted in game mechanics. These designations are
+tied to certain ideas that are distinct from each other
+and we want to learn whether these distinctions are
+more consistently communicated through words or images.
 
 We plan to also explore
 how the model generalizes across different splits
@@ -94,14 +97,52 @@ There is one notable case
 of using the full text of a card to predict the card's ``color''.
 We can find no case of anyone using the art on the cards.
 
+\section*{Methodology}
+
+From the set of all MtG cards we will define three collections.
+MtG ``sets'' are released every
+3 to 4 months and each have an individual style.
+However,
+the art direction shifts drastically at the set Shards of Alara,
+going from more cartoonish and animated to more realistic.
+Collection 1 will consist of cards from the most recent set,
+``Guilds of Ravnica'' to ``Shards of Alara''.
+That represents 54 sets at about 200 cards each,
+for about 10,800 cards total.
+Collection 2 will consist of sets earlier than ``Shards of Alara''
+going back to one of the earliest sets, ``Arabian Nights''.
+That is 52 sets having about 10,400 cards.
+Collection 3 will be the union of the other two collections.
+This will feature 106 sets or about 21,200 cards total.
+
+For evaluation purposes
+we will hold out ten percent of cards uniformly at random
+from all the sets considered
+before dividing into collections.
+For a model trained on the earlier cards,
+evaluating on earlier cards will be ``in-genre''
+and on later cards will be ``out-of-genre''.
+For the model trained on Collection 3
+all cards will be in-genre.
+We will train our model on each collection,
+and report scores on the evaluation data
+broken down by in-genre or out-of-genre.
+
 \section*{Results}
 
-We anticipate that the model will perform better
-when the data is split fully randomly
-than when it is split by set.
-We do not know how the performance of
-classification based on text
-and classification based on artwork will compare.
+We anticipate that the model will
+consistently perform better on in-genre data.
+Text classification
+will likely perform better than image classification
+on out-of-genre data.
+Although MtG card names have many sparsely present proper nouns
+(viz. fantasy nations or races),
+they also have some consistent patterns based on common nouns
+(soldier, scout, etc) and these patterns will form a more
+secure basis for classification than images.
+We hypothesize that text classification will perform
+better than image classification on in-genre data as
+well for similar reasons.
 
 %% \begin{multicols}{2}
 
