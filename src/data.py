@@ -1,6 +1,10 @@
 import tensorflow as tf
 
 
+IMAGE_DIMS = [299, 299, 3]
+NUM_CLASSES = 4
+
+
 def datum_to_tf_example(datum: dict) -> tf.train.SequenceExample:
     example = tf.train.SequenceExample()
     example.context.feature['length'].int64_list.value.append(datum['length'])
@@ -25,16 +29,19 @@ def parse_tf_example(example):
                                            sequence_features=sequence_features,
                                            serialized=example)
 
-    decoded_image = tf.image.decode_jpeg(context_features['image'])
+    decoded_image = tf.image.decode_jpeg(context_parsed['image'])
+    resized_image = tf.round(tf.image.resize_images(decoded_image,
+                                                    IMAGE_DIMS[:-1]))
+    one_hot = tf.one_hot(context_parsed['label'], NUM_CLASSES)
 
     # return {'label': context_parsed['label'],
     #         'length': context_parsed['length'],
     #         'image': decoded_image,
     #         'tokens': sequence_parsed['tokens']}
     return ({'length': context_parsed['length'],
-             'image': decoded_image,
+             'image': resized_image,
              'tokens': sequence_parsed['tokens']},
-            context_parsed['label'])
+            one_hot)
 
 
 def make_dataset(path, batch_size=128) -> tf.data.Dataset:
@@ -43,10 +50,9 @@ def make_dataset(path, batch_size=128) -> tf.data.Dataset:
     dataset = dataset.shuffle(buffer_size=10000)
     # TODO: data augmentation?
     dataset = dataset.padded_batch(batch_size,
-                                   padded_shapes={'length': [],
-                                                  'label': [],
-                                                  'tokens': [None],
-                                                  'image': []})
+                                   padded_shapes=({'length': [],
+                                                   'tokens': [None],
+                                                   'image': IMAGE_DIMS},
+                                                  [NUM_CLASSES]))
     dataset = dataset.prefetch(10)
-    # return dataset.make_initializable_iterator()
     return dataset # with tf 1.12 this should be possible?
