@@ -5,7 +5,8 @@ def datum_to_tf_example(datum: dict) -> tf.train.SequenceExample:
     example = tf.train.SequenceExample()
     example.context.feature['length'].int64_list.value.append(datum['length'])
     example.context.feature['label'].int64_list.value.append(datum['label'])
-    example.context.feature['image'].int64_list.value.extend(datum['image'])
+    # the image is expected as a bytes object, JPEG encoded
+    example.context.feature['image'].bytes_list.value.append(datum['image'])
     tokens = example.feature_lists.feature_list['tokens'].feature
     for t in datum['tokens']:
         tokens.add().int64_list.value.append(t)
@@ -26,10 +27,14 @@ def parse_tf_example(example):
 
     decoded_image = tf.image.decode_jpeg(context_features['image'])
 
-    return {'label': context_parsed['label'],
-            'length': context_parsed['length'],
-            'image': decoded_image,
-            'tokens': sequence_parsed['tokens']}
+    # return {'label': context_parsed['label'],
+    #         'length': context_parsed['length'],
+    #         'image': decoded_image,
+    #         'tokens': sequence_parsed['tokens']}
+    return ({'length': context_parsed['length'],
+             'image': decoded_image,
+             'tokens': sequence_parsed['tokens']},
+            context_parsed['label'])
 
 
 def make_dataset(path, batch_size=128) -> tf.data.Dataset:
@@ -43,4 +48,5 @@ def make_dataset(path, batch_size=128) -> tf.data.Dataset:
                                                   'tokens': [None],
                                                   'image': []})
     dataset = dataset.prefetch(10)
-    return dataset.make_initializable_iterator()
+    # return dataset.make_initializable_iterator()
+    return dataset # with tf 1.12 this should be possible?
