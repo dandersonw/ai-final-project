@@ -17,7 +17,7 @@ label_mapping = {
 
 def transform_data(datum):
     record = {}
-    record['token'] = transform_name(datum)
+    record['tokens'] = transform_name(datum)
     record['length'] = len(datum[1])
     record['image'] = datum[4]
     record['label'] = label_mapping[datum[6]]
