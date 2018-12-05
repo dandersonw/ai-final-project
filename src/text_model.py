@@ -47,7 +47,7 @@ def create_model(config):
 
     model = keras.Model(inputs=tokens, outputs=logits)
 
-    model.compile(optimizer='adam',
+    model.compile(optimizer=tf.keras.optimizers.SGD(clipnorm=5.0),
                   loss=tf.losses.softmax_cross_entropy,
                   metrics=['accuracy'])
 
@@ -65,7 +65,7 @@ def create_simple_model(config):
 
     model = keras.Model(inputs=tokens, outputs=logits)
 
-    model.compile(optimizer='adam',
+    model.compile(optimizer=tf.keras.optimizers.SGD(clipnorm=5.0),
                   loss=tf.losses.softmax_cross_entropy,
                   metrics=['accuracy'])
 
