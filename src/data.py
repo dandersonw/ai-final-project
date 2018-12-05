@@ -30,8 +30,9 @@ def parse_tf_example(example):
                                            serialized=example)
 
     decoded_image = tf.image.decode_jpeg(context_parsed['image'])
-    resized_image = tf.round(tf.image.resize_images(decoded_image,
-                                                    IMAGE_DIMS[:-1]))
+    resized_image = tf.cast(tf.round(tf.image.resize_images(decoded_image,
+                                                            IMAGE_DIMS[:-1])),
+                            tf.uint8)
     one_hot = tf.one_hot(context_parsed['label'], NUM_CLASSES)
 
     # return {'label': context_parsed['label'],
@@ -47,6 +48,7 @@ def parse_tf_example(example):
 def make_dataset(path, batch_size=128) -> tf.data.Dataset:
     dataset = tf.data.TFRecordDataset(path)
     dataset = dataset.map(parse_tf_example)
+    dataset = dataset.repeat()
     dataset = dataset.shuffle(buffer_size=10000)
     # TODO: data augmentation?
     dataset = dataset.padded_batch(batch_size,
