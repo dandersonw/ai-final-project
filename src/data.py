@@ -33,15 +33,13 @@ def parse_tf_example(example):
     resized_image = tf.cast(tf.round(tf.image.resize_images(decoded_image,
                                                             IMAGE_DIMS[:-1])),
                             tf.uint8)
-    one_hot = tf.one_hot(context_parsed['label'], NUM_CLASSES)
+    adjusted_label = context_parsed['label'] - 1
+    one_hot = tf.one_hot(adjusted_label, NUM_CLASSES, dtype=tf.float32)
 
-    # return {'label': context_parsed['label'],
-    #         'length': context_parsed['length'],
-    #         'image': decoded_image,
-    #         'tokens': sequence_parsed['tokens']}
-    return ({'length': context_parsed['length'],
-             'image': resized_image,
-             'tokens': sequence_parsed['tokens']},
+    tokens = sequence_parsed['tokens']
+
+    return ({'tokens': tokens,
+             'length': context_parsed['length']},
             one_hot)
 
 
@@ -49,12 +47,16 @@ def make_dataset(path, batch_size=128) -> tf.data.Dataset:
     dataset = tf.data.TFRecordDataset(path)
     dataset = dataset.map(parse_tf_example)
     dataset = dataset.repeat()
-    dataset = dataset.shuffle(buffer_size=10000)
+    dataset = dataset.shuffle(buffer_size=1000)
     # TODO: data augmentation?
+    # dataset = dataset.padded_batch(batch_size,
+    #                                padded_shapes=({'length': [],
+    #                                                'tokens': [None],
+    #                                                'image': IMAGE_DIMS},
+    #                                               [NUM_CLASSES]))
     dataset = dataset.padded_batch(batch_size,
-                                   padded_shapes=({'length': [],
-                                                   'tokens': [None],
-                                                   'image': IMAGE_DIMS},
+                                   padded_shapes=({'tokens': [None],
+                                                   'length': []},
                                                   [NUM_CLASSES]))
     dataset = dataset.prefetch(10)
-    return dataset # with tf 1.12 this should be possible?
+    return dataset

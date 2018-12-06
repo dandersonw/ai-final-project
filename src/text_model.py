@@ -32,59 +32,61 @@ class Config():
         self.num_classes = 4
 
 
-def create_model(config):
-    tokens = keras.Input(shape=[None], dtype=tf.int64, name='tokens')
-    embedded = _embed(tokens, config)
-    recurrent_layer = keras.layers.LSTM(config.lstm_size,
-                                        return_sequences=True)
-    recurrent_out = recurrent_layer(embedded)
+class Model(keras.Model):
+    def __init__(self, config):
+        super(Model, self).__init__()
+        regularizer = keras.regularizers.l2(config.embedding_regularization_coef)
+        self.embedding_layer = keras.layers.Embedding(config.vocab_size,
+                                                      config.embedding_size,
+                                                      embeddings_regularizer=regularizer,
+                                                      mask_zero=True)
+        lstm_cell = keras.layers.LSTMCell(config.lstm_size)
+        self.recurrent_layer = keras.layers.RNN(lstm_cell,
+                                                return_sequences=True)
+        self.attention_layer = SelfAttention(config.attention_num_heads,
+                                             config.attention_head_size)
+        dense_regularizer = keras.regularizers.l2(config.dense_regularization_coef)
+        self.dense_layer = keras.layers.Dense(config.num_classes * 8,
+                                              kernel_regularizer=dense_regularizer,
+                                              activation='relu')
+        self.output_layer = keras.layers.Dense(config.num_classes,
+                                               activation=tf.nn.softmax)
 
-    attention_layer = SelfAttention(config.attention_num_heads,
-                                    config.attention_head_size)
-    attended = attention_layer(recurrent_out)
-
-    logits = _output(attended, config)
-
-    model = keras.Model(inputs=tokens, outputs=logits)
-
-    model.compile(optimizer=tf.keras.optimizers.SGD(clipnorm=5.0),
-                  loss=tf.losses.softmax_cross_entropy,
-                  metrics=['accuracy'])
-
-    return model
-
-
-def create_simple_model(config):
-    tokens = keras.Input(shape=[None], dtype=tf.int64, name='tokens')
-    embedded = _embed(tokens, config)
-
-    recurrent_layer = keras.layers.LSTM(config.lstm_size)
-    recurrent_out = recurrent_layer(embedded)
-
-    logits = _output(recurrent_out, config)
-
-    model = keras.Model(inputs=tokens, outputs=logits)
-
-    model.compile(optimizer=tf.keras.optimizers.SGD(clipnorm=5.0),
-                  loss=tf.losses.softmax_cross_entropy,
-                  metrics=['accuracy'])
-
-    return model
+    def call(self, inputs):
+        tokens = inputs['tokens']
+        embedded = self.embedding_layer(tokens)
+        recurrent_out = self.recurrent_layer(embedded)
+        attended = self.attention_layer(recurrent_out)
+        # print_op = tf.print(tokens)
+        # with tf.control_dependencies([print_op]):
+        probs = self.output_layer(self.dense_layer(attended))
+        return probs
 
 
-def _embed(tokens, config):
-    embeddings_regularizer = keras.regularizers.l2(config.embedding_regularization_coef)
-    embedding_layer = keras.layers.Embedding(config.vocab_size,
-                                             config.embedding_size,
-                                             embeddings_regularizer=embeddings_regularizer,
-                                             mask_zero=True)
-    return embedding_layer(tokens)
+class SimpleModel(keras.Model):
+    def __init__(self, config):
+        super(SimpleModel, self).__init__()
+        regularizer = keras.regularizers.l2(config.embedding_regularization_coef)
+        self.embedding_layer = keras.layers.Embedding(config.vocab_size,
+                                                      config.embedding_size,
+                                                      embeddings_regularizer=regularizer,
+                                                      mask_zero=True)
+        lstm_cell = keras.layers.LSTMCell(config.lstm_size)
+        self.recurrent_layer = keras.layers.RNN(lstm_cell, return_state=True)
+        self.concat_layer = keras.layers.Concatenate()
+        dense_regularizer = keras.regularizers.l2(config.dense_regularization_coef)
+        self.dense_layer = keras.layers.Dense(config.num_classes * 8,
+                                              kernel_regularizer=dense_regularizer,
+                                              activation='relu')
+        self.output_layer = keras.layers.Dense(config.num_classes,
+                                               activation=tf.nn.softmax)
 
-
-def _output(inputs, config):
-    dense_regularizer = keras.regularizers.l2(config.dense_regularization_coef)
-    dense_layer = keras.layers.Dense(config.num_classes * 8,
-                                     kernel_regularizer=dense_regularizer,
-                                     activation='relu')
-    output_layer = keras.layers.Dense(config.num_classes)
-    return output_layer(dense_layer(inputs))
+    def call(self, inputs):
+        tokens = inputs['tokens']
+        embedded = self.embedding_layer(tokens)
+        _, state_1, state_2 = self.recurrent_layer(embedded)
+        recurrent_out = self.concat_layer([state_1, state_2])
+        # print_op = tf.print(tokens)
+        # with tf.control_dependencies([print_op]):
+        probs = self.output_layer(self.dense_layer(recurrent_out))
+        return probs
