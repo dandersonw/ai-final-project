@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 
-IMAGE_DIMS = [299, 299, 3]
+IMAGE_DIMS = [571, 460, 3]
 NUM_CLASSES = 4
 
 

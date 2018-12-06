@@ -1,0 +1,3 @@
+./data/testing_data.tfrecord
+./data/training_data.tfrecord
+./data/validation_data.tfrecord
