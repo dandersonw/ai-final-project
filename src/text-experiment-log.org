@@ -1,0 +1,26 @@
+* First good run of self-attention model
+
+commit: 8deb5c5c8d7e328b106e44af7c8cdc5680cbd5f4
+
+=first-good-attention=
+
+loss: 0.0439 - acc: 0.9918 - val_loss: 0.0369 - val_acc: 0.9964
+
+test_loss: 0.04614141092381694, test_acc: 0.9950284090909091
+
+=first-good-simple=
+
+loss: 0.0276 - acc: 0.9932 - val_loss: 0.0265 - val_acc: 0.9950
+
+[0.0331570277498527, 0.9928977272727273]
+
+#+begin_src python
+config = text_model.Config(lstm_layers=1,
+                           lstm_size=256,
+                           embedding_size=64,
+                           attention_num_heads=3,
+                           attention_head_size=64,
+                           # embedding_regularization_coef=1e-4,
+                           # dense_regularization_coef=1e-4,
+                           feature_params={'vocab_size': 255},)
+#+end_src
