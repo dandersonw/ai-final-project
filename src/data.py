@@ -3,6 +3,7 @@ import tensorflow as tf
 
 IMAGE_DIMS = [299, 299, 3]
 NUM_CLASSES = 4
+FEATURE_KEYS = {'tokens', 'length', 'image'}
 
 
 def datum_to_tf_example(datum: dict) -> tf.train.SequenceExample:
@@ -17,7 +18,7 @@ def datum_to_tf_example(datum: dict) -> tf.train.SequenceExample:
     return example
 
 
-def parse_tf_example(example):
+def parse_tf_example(example, features):
     context_features = {'label': tf.FixedLenFeature([], dtype=tf.int64),
                         'length': tf.FixedLenFeature([], dtype=tf.int64),
                         'image': tf.FixedLenFeature([], dtype=tf.string)}
@@ -38,25 +39,27 @@ def parse_tf_example(example):
 
     tokens = sequence_parsed['tokens']
 
-    return ({'tokens': tokens,
-             'length': context_parsed['length']},
+    all_features = {'tokens': tokens,
+                    'length': context_parsed['length'],
+                    'image': resized_image}
+    # Not returning features we don't need saves computation time
+    # In pure TF code it wouldn't matter,
+    # but Keras must force evaluation at some point
+    returned_features = {k: v for k, v in all_features.items() if k in features}
+    return (returned_features,
             one_hot)
 
 
-def make_dataset(path, batch_size=128) -> tf.data.Dataset:
+def make_dataset(path, batch_size=128, features=FEATURE_KEYS) -> tf.data.Dataset:
     dataset = tf.data.TFRecordDataset(path)
-    dataset = dataset.map(parse_tf_example)
+    dataset = dataset.map(lambda d: parse_tf_example(d, features))
     dataset = dataset.repeat()
     dataset = dataset.shuffle(buffer_size=1000)
     # TODO: data augmentation?
-    # dataset = dataset.padded_batch(batch_size,
-    #                                padded_shapes=({'length': [],
-    #                                                'tokens': [None],
-    #                                                'image': IMAGE_DIMS},
-    #                                               [NUM_CLASSES]))
     dataset = dataset.padded_batch(batch_size,
-                                   padded_shapes=({'tokens': [None],
-                                                   'length': []},
+                                   padded_shapes=({'length': [],
+                                                   'tokens': [None],
+                                                   'image': IMAGE_DIMS},
                                                   [NUM_CLASSES]))
     dataset = dataset.prefetch(10)
     return dataset
