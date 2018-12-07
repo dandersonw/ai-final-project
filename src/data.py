@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 
 IMAGE_DIMS = [299, 299, 3]
@@ -51,15 +52,55 @@ def parse_tf_example(example, features):
 
 
 def make_dataset(path, batch_size=128, features=FEATURE_KEYS) -> tf.data.Dataset:
-    dataset = tf.data.TFRecordDataset(path)
-    dataset = dataset.map(lambda d: parse_tf_example(d, features))
-    dataset = dataset.repeat()
-    dataset = dataset.shuffle(buffer_size=1000)
-    # TODO: data augmentation?
-    dataset = dataset.padded_batch(batch_size,
-                                   padded_shapes=({'length': [],
-                                                   'tokens': [None],
-                                                   'image': IMAGE_DIMS},
-                                                  [NUM_CLASSES]))
-    dataset = dataset.prefetch(10)
-    return dataset
+    with tf.name_scope(path):
+        dataset = tf.data.TFRecordDataset(path)
+        dataset = dataset.map(lambda d: parse_tf_example(d, features))
+        dataset = dataset.shuffle(buffer_size=1000)
+        # TODO: data augmentation?
+        padding_shapes = {'length': [],
+                          'tokens': [None],
+                          'image': IMAGE_DIMS}
+        padding_shapes = {k: v for k, v in padding_shapes.items() if k in features}
+        dataset = dataset.padded_batch(batch_size,
+                                       padded_shapes=(padding_shapes,
+                                                      [NUM_CLASSES]))
+        dataset = dataset.prefetch(10)
+        return dataset
+
+
+def _unintern_tokens(tokens) -> str:
+    return "".join(chr(t) for t in tokens if t)
+
+
+def extract_card_names_from_dataset(dataset, sess):
+    result = []
+    iterator = dataset.make_one_shot_iterator().get_next()
+    while True:
+        try:
+            batch = sess.run(iterator)
+            result.extend([_unintern_tokens(tokens) for tokens in batch[0]['tokens']])
+        except tf.errors.OutOfRangeError:
+            break
+    return result
+
+
+def preload_dataset(path, sess):
+    dataset = make_dataset(path, batch_size=100000)
+    X = None
+    y = None
+    iterator = dataset.make_one_shot_iterator().get_next()
+    while True:
+        try:
+            batch = sess.run(iterator)
+            if X is None:
+                X = {k: [v] for k, v in batch[0].items()}
+                y = [batch[1]]
+            else:
+                for k in X:
+                    X[k].append(batch[0][k])
+                    y.append(batch[1])
+        except tf.errors.OutOfRangeError:
+            break
+    X = {k: np.concatenate(v) for k, v in X.items()}
+    y = np.concatenate(y)
+    return (X, y)

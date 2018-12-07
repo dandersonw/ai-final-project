@@ -53,7 +53,7 @@ class Model(keras.Model):
                                                activation=tf.nn.softmax)
 
     def call(self, inputs):
-        tokens = inputs['tokens']
+        tokens = inputs#['tokens']
         embedded = self.embedding_layer(tokens)
         recurrent_out = self.recurrent_layer(embedded)
         attended = self.attention_layer(recurrent_out)
@@ -82,7 +82,8 @@ class SimpleModel(keras.Model):
                                                activation=tf.nn.softmax)
 
     def call(self, inputs):
-        tokens = inputs['tokens']
+        # tokens = inputs['tokens']
+        tokens = inputs
         embedded = self.embedding_layer(tokens)
         _, state_1, state_2 = self.recurrent_layer(embedded)
         recurrent_out = self.concat_layer([state_1, state_2])
