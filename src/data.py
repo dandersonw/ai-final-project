@@ -1,10 +1,12 @@
 import tensorflow as tf
 import numpy as np
 
+import re
+
 
 IMAGE_DIMS = [571, 460, 3]
 NUM_CLASSES = 4
-FEATURE_KEYS = {'tokens', 'length', 'image'}
+FEATURE_KEYS = {'tokens', 'length', 'image', 'word_tokens'}
 
 
 def datum_to_tf_example(datum: dict) -> tf.train.SequenceExample:
@@ -16,6 +18,9 @@ def datum_to_tf_example(datum: dict) -> tf.train.SequenceExample:
     tokens = example.feature_lists.feature_list['tokens'].feature
     for t in datum['tokens']:
         tokens.add().int64_list.value.append(t)
+    word_tokens = example.feature_lists.feature_list['word_tokens'].feature
+    for t in datum['word_tokens']:
+        word_tokens.add().int64_list.value.append(t)
     return example
 
 
@@ -24,7 +29,9 @@ def parse_tf_example(example, features):
                         'length': tf.FixedLenFeature([], dtype=tf.int64),
                         'image': tf.FixedLenFeature([], dtype=tf.string)}
     sequence_features = {'tokens': tf.FixedLenSequenceFeature([],
-                                                              dtype=tf.int64)}
+                                                              dtype=tf.int64),
+                         'word_tokens': tf.FixedLenSequenceFeature([],
+                                                                   dtype=tf.int64)}
 
     context_parsed, sequence_parsed \
         = tf.parse_single_sequence_example(context_features=context_features,
@@ -38,11 +45,11 @@ def parse_tf_example(example, features):
     adjusted_label = context_parsed['label'] - 1
     one_hot = tf.one_hot(adjusted_label, NUM_CLASSES, dtype=tf.float32)
 
-    tokens = sequence_parsed['tokens']
-
-    all_features = {'tokens': tokens,
+    all_features = {'tokens': sequence_parsed['tokens'],
+                    'word_tokens': sequence_parsed['word_tokens'],
                     'length': context_parsed['length'],
                     'image': resized_image}
+
     # Not returning features we don't need saves computation time
     # In pure TF code it wouldn't matter,
     # but Keras must force evaluation at some point
@@ -59,6 +66,7 @@ def make_dataset(path, batch_size=128, features=FEATURE_KEYS) -> tf.data.Dataset
         # TODO: data augmentation?
         padding_shapes = {'length': [],
                           'tokens': [None],
+                          'word_tokens': [None],
                           'image': IMAGE_DIMS}
         padding_shapes = {k: v for k, v in padding_shapes.items() if k in features}
         dataset = dataset.padded_batch(batch_size,
