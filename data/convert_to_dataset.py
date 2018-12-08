@@ -14,9 +14,9 @@ db = pymysql.connect(host="localhost",
                      db="aiproject",
                      port=3307)
 
-def convert_data(output_path, status):
+def convert_data(output_path, status, setSql):
     with db.cursor() as cursor:
-        sql = "select * from unique_card_data where experiment_status = %s"
+        sql = "select * from unique_card_data where experiment_status = %s " + setSql
         cursor.execute(sql, status)
         responses = cursor.fetchall()
         #print(responses[0])
@@ -30,6 +30,16 @@ def convert_data(output_path, status):
             print("wrote", counter, "of", data_size)
             counter += 1
 
-#convert_data("./testing_data.tfrecord", "TESTING")
-convert_data("./training_data.tfrecord", "TRAINING")
-convert_data("./validation_data.tfrecord", "VALIDATION")
+#convert_data("./tfrecord/testing_data.tfrecord", "TESTING")
+#convert_data("./tfrecord/training_data.tfrecord", "TRAINING")
+#convert_data("./tfrecord/validation_data.tfrecord", "VALIDATION")
+
+modern_sql = "and set_name in (select setCode from sets where releaseDate >= date(\"2008-10-03\"))"
+convert_data("./tfrecord/modern_training_data.tfrecord", "TRAINING", modern_sql)
+convert_data("./tfrecord/modern_validation_data.tfrecord", "VALIDATION", modern_sql)
+convert_data("./tfrecord/modern_testing_data.tfrecord", "TESTING", modern_sql)
+
+legacy_sql = "and set_name in (select setCode from sets where releaseDate < date(\"2008-10-03\"))"
+convert_data("./tfrecord/legacy_training_data.tfrecord", "TRAINING", legacy_sql)
+convert_data("./tfrecord/legacy_validation_data.tfrecord", "VALIDATION", legacy_sql)
+convert_data("./tfrecord/legacy_testing_data.tfrecord", "TESTING", legacy_sql)
