@@ -14,9 +14,8 @@ db = pymysql.connect(host="localhost",
                      db="aiproject",
                      port=3307)
 
-def convert_data(output_path, status, setSql):
+def convert_data(output_path, status, sql):
     with db.cursor() as cursor:
-        sql = "select * from unique_card_data where experiment_status = %s " + setSql
         cursor.execute(sql, status)
         responses = cursor.fetchall()
         #print(responses[0])
@@ -30,16 +29,22 @@ def convert_data(output_path, status, setSql):
             print("wrote", counter, "of", data_size)
             counter += 1
 
-#convert_data("./tfrecord/testing_data.tfrecord", "TESTING")
-#convert_data("./tfrecord/training_data.tfrecord", "TRAINING")
-#convert_data("./tfrecord/validation_data.tfrecord", "VALIDATION")
+dev_sql = "select * from dev_card_table where experiment_status = %s"
+convert_data("./tfrecord/dev_testing_data.tfrecord", "TESTING", dev_sql)
+convert_data("./tfrecord/dev_training_data.tfrecord", "TRAINING", dev_sql)
+convert_data("./tfrecord/dev_validation_data.tfrecord", "VALIDATION", dev_sql)
 
-modern_sql = "and set_name in (select setCode from sets where releaseDate >= date(\"2008-10-03\"))"
-convert_data("./tfrecord/modern_training_data.tfrecord", "TRAINING", modern_sql)
-convert_data("./tfrecord/modern_validation_data.tfrecord", "VALIDATION", modern_sql)
-convert_data("./tfrecord/modern_testing_data.tfrecord", "TESTING", modern_sql)
+#total_sql = "select * from unique_card_data where experiment_status = %s"
+#convert_data("./tfrecord/testing_data.tfrecord", "TESTING", total_sql)
+#convert_data("./tfrecord/training_data.tfrecord", "TRAINING", total_sql)
+#convert_data("./tfrecord/validation_data.tfrecord", "VALIDATION", total_sql)
 
-legacy_sql = "and set_name in (select setCode from sets where releaseDate < date(\"2008-10-03\"))"
-convert_data("./tfrecord/legacy_training_data.tfrecord", "TRAINING", legacy_sql)
-convert_data("./tfrecord/legacy_validation_data.tfrecord", "VALIDATION", legacy_sql)
-convert_data("./tfrecord/legacy_testing_data.tfrecord", "TESTING", legacy_sql)
+# modern_sql = total_sql + " and set_name in (select setCode from sets where releaseDate >= date(\"2008-10-03\"))"
+# convert_data("./tfrecord/modern_training_data.tfrecord", "TRAINING", modern_sql)
+# convert_data("./tfrecord/modern_validation_data.tfrecord", "VALIDATION", modern_sql)
+# convert_data("./tfrecord/modern_testing_data.tfrecord", "TESTING", modern_sql)
+
+# legacy_sql = total_sql = " and set_name in (select setCode from sets where releaseDate < date(\"2008-10-03\"))"
+# convert_data("./tfrecord/legacy_training_data.tfrecord", "TRAINING", legacy_sql)
+# convert_data("./tfrecord/legacy_validation_data.tfrecord", "VALIDATION", legacy_sql)
+# convert_data("./tfrecord/legacy_testing_data.tfrecord", "TESTING", legacy_sql)
