@@ -195,8 +195,8 @@ def dense_block(x, stage, nb_layers, nb_filter, growth_rate, dropout_rate=None, 
 if __name__ == '__main__':
     print("starting main")
     # tuning vars
-    batch_size = 16
-    nb_epoch = 10
+    batch_size = 1
+    nb_epoch = 1
 
     DATA_DIR = Path('../data/tfrecord')
     TRAIN_DATA_PATH = DATA_DIR / 'dev_training_data.tfrecord'
@@ -212,11 +212,10 @@ if __name__ == '__main__':
     # Start Fine-tuning
     model.fit(training_data,
               epochs=nb_epoch,
-              steps_per_epoch=111,
-              validation_steps=11,
+              steps_per_epoch=1,
+              validation_steps=1,
               verbose=1,
-              validation_data=(validation_data),
-              )
+              validation_data=(validation_data))
 
     # Make predictions
     predictions_valid = model.predict(validation_data, batch_size=batch_size, verbose=1)
