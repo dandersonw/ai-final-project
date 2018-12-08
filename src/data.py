@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 
-IMAGE_DIMS = [299, 299, 3]
+IMAGE_DIMS = [571, 460, 3]
 NUM_CLASSES = 4
 FEATURE_KEYS = {'tokens', 'length', 'image'}
 
