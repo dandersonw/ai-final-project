@@ -6,7 +6,7 @@ import re
 
 IMAGE_DIMS = [571, 460, 3]
 NUM_CLASSES = 4
-FEATURE_KEYS = {'tokens', 'length', 'image', 'word_tokens'}
+FEATURE_KEYS = {'tokens', 'length', 'image', 'word_tokens', 'uncased_word_tokens'}
 
 
 def datum_to_tf_example(datum: dict) -> tf.train.SequenceExample:
@@ -21,6 +21,9 @@ def datum_to_tf_example(datum: dict) -> tf.train.SequenceExample:
     word_tokens = example.feature_lists.feature_list['word_tokens'].feature
     for t in datum['word_tokens']:
         word_tokens.add().int64_list.value.append(t)
+    uncased_word_tokens = example.feature_lists.feature_list['uncased_word_tokens'].feature
+    for t in datum['uncased_word_tokens']:
+        uncased_word_tokens.add().int64_list.value.append(t)
     return example
 
 
@@ -30,9 +33,10 @@ def parse_tf_example(example, features):
                         'image': tf.FixedLenFeature([], dtype=tf.string)}
     sequence_features = {'tokens': tf.FixedLenSequenceFeature([],
                                                               dtype=tf.int64),
-                         # 'word_tokens': tf.FixedLenSequenceFeature([],
-                         #                                           dtype=tf.int64)
-    }
+                         'word_tokens': tf.FixedLenSequenceFeature([],
+                                                                   dtype=tf.int64),
+                         'uncased_word_tokens': tf.FixedLenSequenceFeature([],
+                                                                           dtype=tf.int64)}
 
     context_parsed, sequence_parsed \
         = tf.parse_single_sequence_example(context_features=context_features,
@@ -45,9 +49,12 @@ def parse_tf_example(example, features):
                             tf.uint8)
     adjusted_label = context_parsed['label'] - 1
     one_hot = tf.one_hot(adjusted_label, NUM_CLASSES, dtype=tf.float32)
+    word_tokens = sequence_parsed['word_tokens'] + tf.constant(1, dtype=tf.int64)
+    uncased_word_tokens = sequence_parsed['uncased_word_tokens'] + tf.constant(1, dtype=tf.int64)
 
     all_features = {'tokens': sequence_parsed['tokens'],
-                    # 'word_tokens': sequence_parsed['word_tokens'],
+                    'word_tokens': word_tokens,
+                    'uncased_word_tokens': uncased_word_tokens,
                     'length': context_parsed['length'],
                     'image': resized_image}
 
