@@ -146,4 +146,3 @@ def _load_word_embeddings() -> np.ndarray:
             values = [float(v) for v in tokens[1:]]
             embeddings[idx] = values
     return (intern_dict, embeddings)
-

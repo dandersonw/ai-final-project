@@ -28,6 +28,14 @@ def main():
         testing_data = data.preload_dataset(args.test, sess, features=features)
 
     model = text_model.Model(config)
-    model.compile(loss='categorical_crossentropy',
+    model.compile(optimizer=tf.keras.optimizers.Adam(clipnorm=5.0),
+                  loss='categorical_crossentropy',
                   metrics=['accuracy'])
-    model.evaluate(x=testing_data[0]['tokens'], y=testing_data[1])
+    model.load_weights(args.checkpoint_path)
+    scores = model.evaluate(x=testing_data[0]['tokens'], y=testing_data[1])
+    for (metric, score) in zip(model.metrics_names, scores):
+        print('{}: {:.4f}'.format(metric, score))
+
+
+if __name__ == '__main__':
+    main()
