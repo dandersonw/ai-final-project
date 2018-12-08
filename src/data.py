@@ -84,8 +84,8 @@ def extract_card_names_from_dataset(dataset, sess):
     return result
 
 
-def preload_dataset(path, sess):
-    dataset = make_dataset(path, batch_size=100000)
+def preload_dataset(path, sess, features=FEATURE_KEYS):
+    dataset = make_dataset(path, batch_size=100000, features=features)
     X = None
     y = None
     iterator = dataset.make_one_shot_iterator().get_next()
