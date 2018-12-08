@@ -81,8 +81,7 @@ def densenet121_model(img_rows, img_cols, color_type=1, nb_dense_block=4, growth
     model = Model(img_input, x_fc, name='densenet')
 
     # Use pre-trained weights for Tensorflow backend
-    resource_path = Path(os.environ['AI_RESOURCE_PATH'])
-    weights_path =  resource_path / 'densenet121_weights_tf.h5'
+    weights_path = os.environ['AI_RESOURCE_PATH'] + 'densenet121_weights_tf.h5'
 
     model.load_weights(weights_path, by_name=True)
 
