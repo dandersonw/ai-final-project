@@ -49,7 +49,8 @@ def train_model(config, training_data, validation_data, checkpoint_path):
 
     train_kwargs = {'x': model.extract_inputs_from_dict(training_data[0]),
                     'y': training_data[1],
-                    'validation_data': (validation_data[0]['tokens'], validation_data[1]),
+                    'validation_data': (model.extract_inputs_from_dict(validation_data[0]),
+                                        validation_data[1]),
                     'callbacks': [checkpoint, early_stopping]}
     
     if config.use_pretrained_embeddings:
