@@ -95,7 +95,8 @@ class Model(keras.Model):
         if self.config.use_word_level_embeddings:
             tokens, word_tokens = inputs
             word_embedded = self.word_embedding_layer(word_tokens)
-            word_embedded = self.word_embedding_dropout(word_embedded, training)
+            word_embedded = self.word_embedding_dropout(word_embedded,
+                                                        training=training)
             word_embedded = tf.reduce_mean(word_embedded, axis=-2)
             initial_state = self.word_dense_layer(word_embedded)
         else:
@@ -107,7 +108,7 @@ class Model(keras.Model):
                                              training=training)
         attended = self.attention_layer(recurrent_out,
                                         training=training)
-        attended = self.attention_dropout(attended, training)
+        attended = self.attention_dropout(attended, training=training)
         # print_op = tf.print(attended)
         # with tf.control_dependencies([print_op]):
         probs = self.output_layer(self.dense_layer(attended))
