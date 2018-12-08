@@ -30,8 +30,9 @@ def parse_tf_example(example, features):
                         'image': tf.FixedLenFeature([], dtype=tf.string)}
     sequence_features = {'tokens': tf.FixedLenSequenceFeature([],
                                                               dtype=tf.int64),
-                         'word_tokens': tf.FixedLenSequenceFeature([],
-                                                                   dtype=tf.int64)}
+                         # 'word_tokens': tf.FixedLenSequenceFeature([],
+                         #                                           dtype=tf.int64)
+    }
 
     context_parsed, sequence_parsed \
         = tf.parse_single_sequence_example(context_features=context_features,
@@ -46,7 +47,7 @@ def parse_tf_example(example, features):
     one_hot = tf.one_hot(adjusted_label, NUM_CLASSES, dtype=tf.float32)
 
     all_features = {'tokens': sequence_parsed['tokens'],
-                    'word_tokens': sequence_parsed['word_tokens'],
+                    # 'word_tokens': sequence_parsed['word_tokens'],
                     'length': context_parsed['length'],
                     'image': resized_image}
 
