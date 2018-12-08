@@ -30,11 +30,15 @@ def convert_data(output_path, status, sql):
             counter += 1
 
 dev_sql = "select * from dev_card_table where experiment_status = %s"
+<<<<<<< HEAD
 print("starting dev")
+=======
+>>>>>>> 6efae3d23247906a71ed2b67279fb4044a0a9e34
 convert_data("./tfrecord/dev_testing_data.tfrecord", "TESTING", dev_sql)
 convert_data("./tfrecord/dev_training_data.tfrecord", "TRAINING", dev_sql)
 convert_data("./tfrecord/dev_validation_data.tfrecord", "VALIDATION", dev_sql)
 
+<<<<<<< HEAD
 print("starting total")
 total_sql = "select * from unique_card_data where experiment_status = %s"
 convert_data("./tfrecord/testing_data.tfrecord", "TESTING", total_sql)
@@ -52,3 +56,19 @@ legacy_sql = total_sql = " and set_name in (select setCode from sets where relea
 convert_data("./tfrecord/legacy_training_data.tfrecord", "TRAINING", legacy_sql)
 convert_data("./tfrecord/legacy_validation_data.tfrecord", "VALIDATION", legacy_sql)
 convert_data("./tfrecord/legacy_testing_data.tfrecord", "TESTING", legacy_sql)
+=======
+#total_sql = "select * from unique_card_data where experiment_status = %s"
+#convert_data("./tfrecord/testing_data.tfrecord", "TESTING", total_sql)
+#convert_data("./tfrecord/training_data.tfrecord", "TRAINING", total_sql)
+#convert_data("./tfrecord/validation_data.tfrecord", "VALIDATION", total_sql)
+
+# modern_sql = total_sql + " and set_name in (select setCode from sets where releaseDate >= date(\"2008-10-03\"))"
+# convert_data("./tfrecord/modern_training_data.tfrecord", "TRAINING", modern_sql)
+# convert_data("./tfrecord/modern_validation_data.tfrecord", "VALIDATION", modern_sql)
+# convert_data("./tfrecord/modern_testing_data.tfrecord", "TESTING", modern_sql)
+
+# legacy_sql = total_sql = " and set_name in (select setCode from sets where releaseDate < date(\"2008-10-03\"))"
+# convert_data("./tfrecord/legacy_training_data.tfrecord", "TRAINING", legacy_sql)
+# convert_data("./tfrecord/legacy_validation_data.tfrecord", "VALIDATION", legacy_sql)
+# convert_data("./tfrecord/legacy_testing_data.tfrecord", "TESTING", legacy_sql)
+>>>>>>> 6efae3d23247906a71ed2b67279fb4044a0a9e34
