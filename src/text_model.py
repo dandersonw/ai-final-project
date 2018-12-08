@@ -14,6 +14,9 @@ from tensorflow.keras.layers import Concatenate
 from tensorflow.keras.layers import Dense
 
 
+GLOVE_VOCAB_SIZE = 2196017
+
+
 class Config():
     def __init__(
             self,
@@ -25,9 +28,11 @@ class Config():
             attention_num_heads,
             attention_head_size,
             use_pretrained_embeddings=False,
+            use_word_level_embeddings=False,
             embedding_regularization_coef=0.0,
             dense_regularization_coef=0.0,
             lstm_dropout=0.0,
+            dense_dropout=0.0,
             collect_metrics=True,
     ):
         self.lstm_layers = lstm_layers
@@ -60,6 +65,15 @@ class Model(keras.Model):
                                              config.embedding_size,
                                              embeddings_regularizer=regularizer,
                                              mask_zero=True)
+        if config.use_word_level_embeddings:
+            _, weights = _load_word_embeddings()
+            self.word_embedding_layer = Embedding(GLOVE_VOCAB_SIZE,
+                                                  config.embedding_size,
+                                                  weights=[weights],
+                                                  trainable=False,
+                                                  mask_zero=True)
+            self.word_dense_layer = Dense(config.lstm_size,
+                                          activation='tanh')
         self.recurrent_layer = LSTM(config.lstm_size,
                                     recurrent_dropout=config.lstm_dropout,
                                     return_sequences=True)
@@ -71,16 +85,30 @@ class Model(keras.Model):
                                  activation='relu')
         self.output_layer = Dense(config.num_classes,
                                   activation=tf.nn.softmax)
+        self.use_word_level_embeddings = config.use_word_level_embeddings
 
     def call(self, inputs):
-        tokens = inputs#['tokens']
+        if self.use_word_level_embeddings:
+            tokens, word_tokens = inputs
+            word_embedded = self.word_embedding_layer(word_tokens)
+            word_embedded = tf.reduce_mean(word_embedded, axis=-2)
+            initial_state = self.word_dense_layer(word_embedded)
+        else:
+            tokens = inputs
+            initial_state = None
         embedded = self.embedding_layer(tokens)
-        recurrent_out = self.recurrent_layer(embedded)
+        recurrent_out = self.recurrent_layer(embedded, initial_state=initial_state)
         attended = self.attention_layer(recurrent_out)
         # print_op = tf.print(tokens)
         # with tf.control_dependencies([print_op]):
         probs = self.output_layer(self.dense_layer(attended))
         return probs
+
+    def extract_inputs_from_dict(self, input_dict):
+        if self.use_word_level_embeddings:
+            return [input_dict['tokens'], input_dict['word_tokens']]
+        else:
+            return input_dict['tokens']
 
 
 class SimpleModel(keras.Model):
@@ -133,10 +161,10 @@ def _load_character_embeddings() -> np.ndarray:
     return result
 
 
-def _load_word_embeddings() -> np.ndarray:
+def _load_word_embeddings():
     data_paths = _get_data_paths()
     intern_dict = {}
-    embeddings = np.ndarray((2196017, 300))
+    embeddings = np.ndarray((GLOVE_VOCAB_SIZE, 300))
     with open(data_paths['word_embedding_path'], mode='r') as f:
         for l in f:
             tokens = l.split(' ')
