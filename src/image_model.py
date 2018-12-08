@@ -199,9 +199,9 @@ if __name__ == '__main__':
     nb_epoch = 10
 
     DATA_DIR = Path('../data/tfrecord')
-    TRAIN_DATA_PATH = DATA_DIR / 'training_data.tfrecord'
-    VALIDATION_DATA_PATH = DATA_DIR / 'validation_data.tfrecord'
-    TEST_DATA_PATH = DATA_DIR / 'testing_data.tfrecord'
+    TRAIN_DATA_PATH = DATA_DIR / 'modern_training_data.tfrecord'
+    VALIDATION_DATA_PATH = DATA_DIR / 'modern_validation_data.tfrecord'
+    TEST_DATA_PATH = DATA_DIR / 'modern_testing_data.tfrecord'
 
     training_data = data.make_dataset(str(TRAIN_DATA_PATH))
     validation_data = data.make_dataset(str(VALIDATION_DATA_PATH))
