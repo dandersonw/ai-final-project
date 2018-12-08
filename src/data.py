@@ -75,6 +75,7 @@ def make_dataset(path, batch_size=128, features=FEATURE_KEYS) -> tf.data.Dataset
         padding_shapes = {'length': [],
                           'tokens': [None],
                           'word_tokens': [None],
+                          'uncased_word_tokens': [None],
                           'image': IMAGE_DIMS}
         padding_shapes = {k: v for k, v in padding_shapes.items() if k in features}
         dataset = dataset.padded_batch(batch_size,
