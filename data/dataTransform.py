@@ -29,7 +29,10 @@ def transform_name(datum):
     word_tokens = []
     for w in TOKENIZER.split(name):
         word_tokens.append(intern_dict.get(w, intern_dict['unk']))
-    return (tokens, word_tokens)
+    uncased_word_tokens = []
+    for w in TOKENIZER.split(name):
+        uncased_word_tokens.append(intern_dict.get(w.lower(), intern_dict['unk']))
+    return (tokens, word_tokens, uncased_word_tokens)
 
 
 # Entity = 1, Spell = 2, Enchantment = 3, Artifact = 4
@@ -45,9 +48,10 @@ label_mapping = {
 
 def transform_data(datum):
     record = {}
-    tokens, word_tokens = transform_name(datum)
+    tokens, word_tokens, uncased_word_tokens = transform_name(datum)
     record['tokens'] = tokens
     record['word_tokens'] = word_tokens
+    record['uncased_word_tokens'] = uncased_word_tokens
     record['length'] = len(datum[1])
     record['image'] = datum[4]
     record['label'] = label_mapping[datum[6]]

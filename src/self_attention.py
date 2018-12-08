@@ -24,7 +24,7 @@ class SelfAttention(keras.layers.Layer):
     def compute_output_shape(self, input_shape):
         return [input_shape[:-2], self.num_heads * input_shape[-1]]
 
-    def call(self, inputs):
+    def call(self, inputs, training=None):
         # inputs = (batch, time, in_dim)
         # weights = (head_size, batch, time)
         weights = tf.tensordot(self.W_1, inputs, [[1], [2]])
@@ -46,6 +46,7 @@ class SelfAttention(keras.layers.Layer):
                        ord='fro')
         coef = 4e-3
         penalty = coef * tf.square(norm)
-        self.add_loss(tf.reduce_mean(penalty))
+        if training:
+            self.add_loss(tf.reduce_mean(penalty), inputs=inputs)
 
         return tf.layers.flatten(weighted)
