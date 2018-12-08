@@ -1,5 +1,7 @@
 import text_model
 
+features = {'tokens'}
+
 config = text_model.Config(lstm_layers=1,
                            lstm_size=256,
                            embedding_size=64,

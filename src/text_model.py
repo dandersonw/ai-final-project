@@ -115,7 +115,9 @@ class SimpleModel(keras.Model):
 def _get_data_paths():
     resource_path = Path(os.environ['AI_RESOURCE_PATH'])
     char_embedding_path = resource_path / 'glove.840B.300d-char.txt'
-    return {'char_embedding_path': char_embedding_path}
+    word_embedding_path = resource_path / 'glove.840B.300d.txt'
+    return {'char_embedding_path': char_embedding_path,
+            'word_embedding_path': word_embedding_path}
 
 
 def _load_character_embeddings() -> np.ndarray:
@@ -129,3 +131,19 @@ def _load_character_embeddings() -> np.ndarray:
             values = [float(v) for v in tokens[1:]]
             result[idx] = values
     return result
+
+
+def _load_word_embeddings() -> np.ndarray:
+    data_paths = _get_data_paths()
+    intern_dict = {}
+    embeddings = np.ndarray((2196017, 300))
+    with open(data_paths['word_embedding_path'], mode='r') as f:
+        for l in f:
+            tokens = l.split(' ')
+            word = tokens[0]
+            idx = len(intern_dict)
+            intern_dict[word] = idx
+            values = [float(v) for v in tokens[1:]]
+            embeddings[idx] = values
+    return (intern_dict, embeddings)
+
