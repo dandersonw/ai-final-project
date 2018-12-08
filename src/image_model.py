@@ -13,6 +13,7 @@ import tensorflow.keras.backend as K
 from data import IMAGE_DIMS, NUM_CLASSES
 import data
 from pathlib import Path
+import os
 
 def densenet121_model(img_rows, img_cols, color_type=1, nb_dense_block=4, growth_rate=32, nb_filter=64, reduction=0.5, dropout_rate=0.0, weight_decay=1e-4, num_classes=None):
     '''
@@ -80,7 +81,8 @@ def densenet121_model(img_rows, img_cols, color_type=1, nb_dense_block=4, growth
     model = Model(img_input, x_fc, name='densenet')
 
     # Use pre-trained weights for Tensorflow backend
-    weights_path = './images/densenet121_weights_tf.h5'
+    resource_path = Path(os.environ['AI_RESOURCE_PATH'])
+    weights_path =  resource_path / 'densenet121_weights_tf.h5'
 
     model.load_weights(weights_path, by_name=True)
 
