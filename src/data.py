@@ -4,7 +4,7 @@ import numpy as np
 import re
 
 
-IMAGE_DIMS = [571, 460, 3]
+IMAGE_DIMS = [50, 50, 3]
 NUM_CLASSES = 4
 FEATURE_KEYS = {'tokens', 'length', 'image', 'word_tokens', 'uncased_word_tokens'}
 
