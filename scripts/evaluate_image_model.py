@@ -15,14 +15,9 @@ from data import IMAGE_DIMS, NUM_CLASSES
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--test', required=True)
-    parser.add_argument('--config_dir', required=True)
-    parser.add_argument('--config_name', required=True)
     parser.add_argument('--checkpoint_path', required=True)
     args = parser.parse_args()
 
-    sys.path.append(args.config_dir)
-    config_module = importlib.import_module(args.config_name)
-    config = config_module.config
     features = {'image'}
 
     with tf.Session() as sess:
