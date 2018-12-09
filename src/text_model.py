@@ -15,9 +15,6 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.initializers import Constant
 
 
-GLOVE_VOCAB_SIZE = 200000
-
-
 class Config():
     def __init__(
             self,
@@ -30,6 +27,7 @@ class Config():
             attention_head_size,
             use_pretrained_embeddings=False,
             use_word_level_embeddings=False,
+            glove_vocab_size=200000,
             embedding_regularization_coef=0.0,
             dense_regularization_coef=0.0,
             lstm_dropout=0.0,
@@ -43,6 +41,7 @@ class Config():
         self.attention_num_heads = attention_num_heads
         self.use_pretrained_embeddings = use_pretrained_embeddings
         self.use_word_level_embeddings = use_word_level_embeddings
+        self.glove_vocab_size = glove_vocab_size
         self.lstm_dropout = lstm_dropout
         self.embedding_regularization_coef = embedding_regularization_coef
         self.dense_regularization_coef = dense_regularization_coef
@@ -72,7 +71,7 @@ class Model(keras.Model):
         if config.use_word_level_embeddings:
             intern_dict, weights = _load_word_embeddings()
             self.word_unk = intern_dict['unk']
-            self.word_embedding_layer = Embedding(GLOVE_VOCAB_SIZE,
+            self.word_embedding_layer = Embedding(config.glove_vocab_size,
                                                   300,
                                                   embeddings_initializer=Constant(weights),
                                                   trainable=False,
@@ -108,7 +107,7 @@ class Model(keras.Model):
             tokens, word_tokens, uncased_word_tokens = inputs
             tokens = tf.cast(tokens, tf.int64)
             word_tokens = self._fixup_tokens(word_tokens)
-            uncased_word_tokens = self._fixup_tokens(uncased_word_tokens)
+            uncased_word_tokens = self._fixup_tokens(uncased_word_tokens, config.glove_vocab_size)
             word_embedded = tf.concat([self.word_embedding_layer(word_tokens),
                                        self.word_embedding_layer(uncased_word_tokens)],
                                       axis=-1)
@@ -137,10 +136,10 @@ class Model(keras.Model):
         probs = self.output_layer(self.dense_layer(attended))
         return probs
 
-    def _fixup_tokens(self, tokens):
+    def _fixup_tokens(self, tokens, vocab_size):
         # that a cast is necessary is a sign of some bug in Keras I think
         tokens = tf.cast(tokens, tf.int64)
-        effectively_in_v = tokens < tf.constant(GLOVE_VOCAB_SIZE, dtype=tf.int64)
+        effectively_in_v = tokens < tf.constant(vocab_size, dtype=tf.int64)
         tokens = tf.where(effectively_in_v,
                           tokens,
                           tf.fill(tf.shape(tokens),
@@ -207,16 +206,19 @@ def _load_character_embeddings() -> np.ndarray:
     return result
 
 
-def _load_word_embeddings():
+FULL_GLOVE_VOCAB_SIZE = 2196017
+
+
+def _load_word_embeddings(vocab_size=FULL_GLOVE_VOCAB_SIZE):
     data_paths = _get_data_paths()
     intern_dict = {}
-    embeddings = np.ndarray((GLOVE_VOCAB_SIZE, 300))
+    embeddings = np.ndarray((vocab_size, 300))
     with open(data_paths['word_embedding_path'], mode='r') as f:
         for l in f:
             tokens = l.split(' ')
             word = tokens[0]
             idx = len(intern_dict) + 1
-            if idx >= GLOVE_VOCAB_SIZE:
+            if idx >= vocab_size:
                 break
             intern_dict[word] = idx
             values = [float(v) for v in tokens[1:]]
