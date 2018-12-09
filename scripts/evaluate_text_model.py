@@ -32,7 +32,8 @@ def main():
                   loss='categorical_crossentropy',
                   metrics=['accuracy'])
     model.load_weights(args.checkpoint_path)
-    scores = model.evaluate(x=testing_data[0]['tokens'], y=testing_data[1])
+    scores = model.evaluate(x=model.extract_inputs_from_dict(testing_data[0]),
+                            y=testing_data[1])
     for (metric, score) in zip(model.metrics_names, scores):
         print('{}: {:.4f}'.format(metric, score))
 

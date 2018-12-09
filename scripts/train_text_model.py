@@ -32,7 +32,9 @@ def main():
         testing_data = data.preload_dataset(args.test, sess, features=features)
 
     model = train_model(config, training_data, validation_data, args.checkpoint_path)
-    model.evaluate(x=testing_data[0]['tokens'], y=testing_data[1])
+    scores = model.evaluate(x=testing_data[0]['tokens'], y=testing_data[1])
+    for (metric, score) in zip(model.metrics_names, scores):
+        print('{}: {:.4f}'.format(metric, score))
 
 
 def train_model(config, training_data, validation_data, checkpoint_path):

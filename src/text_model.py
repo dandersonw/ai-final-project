@@ -68,6 +68,7 @@ class Model(keras.Model):
                                              config.embedding_size,
                                              embeddings_regularizer=regularizer,
                                              mask_zero=True)
+        dense_regularizer = keras.regularizers.l2(config.dense_regularization_coef)
         if config.use_word_level_embeddings:
             intern_dict, weights = _load_word_embeddings()
             self.word_unk = intern_dict['unk']
@@ -78,20 +79,23 @@ class Model(keras.Model):
                                                   mask_zero=True)
             self.word_embedding_dropout = Dropout(config.dense_dropout)
             self.word_dense_h_1 = Dense(config.lstm_size,
-                                        activation='relu')
+                                        activation='relu',
+                                        kernel_regularizer=dense_regularizer)
             self.word_dense_h_2 = Dense(config.lstm_size,
-                                        activation='tanh')
+                                        activation='tanh',
+                                        kernel_regularizer=dense_regularizer)
             self.word_dense_c_1 = Dense(config.lstm_size,
-                                        activation='relu')
+                                        activation='relu',
+                                        kernel_regularizer=dense_regularizer)
             self.word_dense_c_2 = Dense(config.lstm_size,
-                                        activation='tanh')
+                                        activation='tanh',
+                                        kernel_regularizer=dense_regularizer)
         self.recurrent_layer = LSTM(config.lstm_size,
                                     recurrent_dropout=config.lstm_dropout,
                                     return_sequences=True)
         self.attention_layer = SelfAttention(config.attention_num_heads,
                                              config.attention_head_size)
         self.attention_dropout = Dropout(config.dense_dropout)
-        dense_regularizer = keras.regularizers.l2(config.dense_regularization_coef)
         self.dense_layer = Dense(config.num_classes * 8,
                                  kernel_regularizer=dense_regularizer,
                                  activation='relu')
@@ -111,8 +115,12 @@ class Model(keras.Model):
             word_embedded = self.word_embedding_dropout(word_embedded,
                                                         training=training)
             word_embedded = tf.reduce_mean(word_embedded, axis=-2)
-            initial_h = self.word_dense_h_2(self.word_dense_h_1(word_embedded))
-            initial_c = self.word_dense_c_2(self.word_dense_c_1(word_embedded))
+            initial_h = self.word_embedding_dropout(self.word_dense_h_1(word_embedded),
+                                                    training=training)
+            initial_h = self.word_dense_h_2(initial_h)
+            initial_c = self.word_embedding_dropout(self.word_dense_c_1(word_embedded),
+                                                    training=training)
+            initial_c = self.word_dense_c_2(initial_c)
             initial_state = [initial_h, initial_c]
         else:
             tokens = inputs
