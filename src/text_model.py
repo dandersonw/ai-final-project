@@ -52,7 +52,7 @@ class Config():
 
 
 class Model(keras.Model):
-    def __init__(self, config):
+    def __init__(self, config, checkpoint_path=None):
         super(Model, self).__init__()
         regularizer = keras.regularizers.l2(config.embedding_regularization_coef)
         if config.use_pretrained_embeddings:
@@ -69,11 +69,14 @@ class Model(keras.Model):
                                              mask_zero=True)
         dense_regularizer = keras.regularizers.l2(config.dense_regularization_coef)
         if config.use_word_level_embeddings:
-            intern_dict, weights = _load_word_embeddings()
-            self.word_unk = intern_dict['unk']
-            self.word_embedding_layer = Embedding(config.glove_vocab_size,
+            if checkpoint_path is None:
+                weights = _load_word_embeddings()[1]
+                embed_init = Constant(weights)
+            else:
+                embed_init = None
+            self.word_embedding_layer = Embedding(config.glove_vocab_size + 1,
                                                   300,
-                                                  embeddings_initializer=Constant(weights),
+                                                  embeddings_initializer=embed_init,
                                                   trainable=False,
                                                   mask_zero=True)
             self.word_embedding_dropout = Dropout(config.dense_dropout)
@@ -101,13 +104,17 @@ class Model(keras.Model):
         self.output_layer = Dense(config.num_classes,
                                   activation=tf.nn.softmax)
         self.config = config
+        if checkpoint_path is not None:
+            self.load_weights(checkpoint_path)
 
     def call(self, inputs, training=False):
         if self.config.use_word_level_embeddings:
             tokens, word_tokens, uncased_word_tokens = inputs
             tokens = tf.cast(tokens, tf.int64)
-            word_tokens = self._fixup_tokens(word_tokens)
-            uncased_word_tokens = self._fixup_tokens(uncased_word_tokens, config.glove_vocab_size)
+            word_tokens = self._fixup_tokens(word_tokens,
+                                             self.config.glove_vocab_size)
+            uncased_word_tokens = self._fixup_tokens(uncased_word_tokens,
+                                                     self.config.glove_vocab_size)
             word_embedded = tf.concat([self.word_embedding_layer(word_tokens),
                                        self.word_embedding_layer(uncased_word_tokens)],
                                       axis=-1)
@@ -139,12 +146,8 @@ class Model(keras.Model):
     def _fixup_tokens(self, tokens, vocab_size):
         # that a cast is necessary is a sign of some bug in Keras I think
         tokens = tf.cast(tokens, tf.int64)
-        effectively_in_v = tokens < tf.constant(vocab_size, dtype=tf.int64)
-        tokens = tf.where(effectively_in_v,
-                          tokens,
-                          tf.fill(tf.shape(tokens),
-                                  tf.constant(self.word_unk,
-                                              dtype=tf.int64)))
+        # note: the last element of the vocab is the unknown token vector
+        tokens = tf.clip_by_value(tokens, 0, vocab_size)
         return tokens
 
     def extract_inputs_from_dict(self, input_dict):
@@ -207,12 +210,13 @@ def _load_character_embeddings() -> np.ndarray:
 
 
 FULL_GLOVE_VOCAB_SIZE = 2196017
+UNK_TOKEN_IDX = 1
 
 
 def _load_word_embeddings(vocab_size=FULL_GLOVE_VOCAB_SIZE):
     data_paths = _get_data_paths()
     intern_dict = {}
-    embeddings = np.ndarray((vocab_size, 300))
+    embeddings = np.ndarray((vocab_size + 1, 300))
     with open(data_paths['word_embedding_path'], mode='r') as f:
         for l in f:
             tokens = l.split(' ')
@@ -223,4 +227,8 @@ def _load_word_embeddings(vocab_size=FULL_GLOVE_VOCAB_SIZE):
             intern_dict[word] = idx
             values = [float(v) for v in tokens[1:]]
             embeddings[idx] = values
+    # a random vector for unknown tokens
+    embeddings[vocab_size] = np.random.normal(0,
+                                              scale=1/np.sqrt(300),
+                                              size=[300])
     return (intern_dict, embeddings)

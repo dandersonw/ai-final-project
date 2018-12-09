@@ -27,11 +27,11 @@ def main():
     with tf.Session() as sess:
         testing_data = data.preload_dataset(args.test, sess, features=features)
 
-    model = text_model.Model(config)
+    model = text_model.Model(config, checkpoint_path=args.checkpoint_path)
     model.compile(optimizer=tf.keras.optimizers.Adam(clipnorm=5.0),
                   loss='categorical_crossentropy',
                   metrics=['accuracy'])
-    model.load_weights(args.checkpoint_path)
+
     scores = model.evaluate(x=model.extract_inputs_from_dict(testing_data[0]),
                             y=testing_data[1])
     for (metric, score) in zip(model.metrics_names, scores):
