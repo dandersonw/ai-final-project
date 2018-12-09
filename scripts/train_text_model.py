@@ -32,7 +32,7 @@ def main():
         testing_data = data.preload_dataset(args.test, sess, features=features)
 
     model = train_model(config, training_data, validation_data, args.checkpoint_path)
-    scores = model.evaluate(x=testing_data[0]['tokens'], y=testing_data[1])
+    scores = model.evaluate(x=model.extract_inputs_from_dict(testing_data[0]), y=testing_data[1])
     for (metric, score) in zip(model.metrics_names, scores):
         print('{}: {:.4f}'.format(metric, score))
 
@@ -43,7 +43,7 @@ def train_model(config, training_data, validation_data, checkpoint_path):
                                                     save_best_only=True,
                                                     save_weights_only=True,
                                                     verbose=1)
-    early_stopping = tf.keras.callbacks.EarlyStopping(patience=4)
+    early_stopping = tf.keras.callbacks.EarlyStopping(patience=10)
     compilation_kwargs = {'optimizer': tf.keras.optimizers.Adam(clipnorm=5.0),
                           'loss': 'categorical_crossentropy',
                           'metrics': ['accuracy']}
