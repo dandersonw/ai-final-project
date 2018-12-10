@@ -21,17 +21,31 @@ def main():
     parser.add_argument('--checkpoint_path', required=True)
     args = parser.parse_args()
 
-    sys.path.append(args.config_dir)
-    config_module = importlib.import_module(args.config_name)
+    _train_model(args.train,
+                 args.valid,
+                 args.test,
+                 args.config_dir,
+                 args.config_name,
+                 args.checkpoint_path)
+
+
+def _train_model(train_data_path,
+                 valid_data_path,
+                 test_data_path,
+                 config_dir,
+                 config_name,
+                 checkpoint_path):
+    sys.path.append(config_dir)
+    config_module = importlib.import_module(config_name)
     config = config_module.config
     features = config_module.features
 
     with tf.Session() as sess:
-        training_data = data.preload_dataset(args.train, sess, features=features)
-        validation_data = data.preload_dataset(args.valid, sess, features=features)
-        testing_data = data.preload_dataset(args.test, sess, features=features)
+        training_data = data.preload_dataset(train_data_path, sess, features=features)
+        validation_data = data.preload_dataset(valid_data_path, sess, features=features)
+        testing_data = data.preload_dataset(test_data_path, sess, features=features)
 
-    model = train_model(config, training_data, validation_data, args.checkpoint_path)
+    model = train_model(config, training_data, validation_data, checkpoint_path)
     scores = model.evaluate(x=model.extract_inputs_from_dict(testing_data[0]), y=testing_data[1])
     for (metric, score) in zip(model.metrics_names, scores):
         print('{}: {:.4f}'.format(metric, score))

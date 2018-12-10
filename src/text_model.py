@@ -3,6 +3,7 @@ import numpy as np
 
 import os
 from pathlib import Path
+from typing import Optional
 
 from self_attention import SelfAttention
 from tensorflow import keras
@@ -10,7 +11,6 @@ from tensorflow import keras
 from tensorflow.keras.layers import LSTM
 from tensorflow.keras.layers import Dropout
 from tensorflow.keras.layers import Embedding
-from tensorflow.keras.layers import Concatenate
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.initializers import Constant
 
@@ -19,12 +19,12 @@ class Config():
     def __init__(
             self,
             *,
-            lstm_layers,
             lstm_size,
             embedding_size,
             feature_params,
-            attention_num_heads,
-            attention_head_size,
+            attention_num_heads=None,
+            attention_head_size=None,
+            use_attention=True,
             use_pretrained_embeddings=False,
             use_word_level_embeddings=False,
             glove_vocab_size=200000,
@@ -34,11 +34,11 @@ class Config():
             dense_dropout=0.0,
             collect_metrics=True,
     ):
-        self.lstm_layers = lstm_layers
         self.lstm_size = lstm_size
         self.embedding_size = embedding_size
         self.attention_head_size = attention_head_size
         self.attention_num_heads = attention_num_heads
+        self.use_attention = use_attention
         self.use_pretrained_embeddings = use_pretrained_embeddings
         self.use_word_level_embeddings = use_word_level_embeddings
         self.glove_vocab_size = glove_vocab_size
@@ -50,9 +50,12 @@ class Config():
         self.vocab_size = feature_params['vocab_size']
         self.num_classes = 4
 
+        if use_attention and (attention_head_size is None or attention_num_heads is None):
+            raise TypeError
+
 
 class Model(keras.Model):
-    def __init__(self, config, checkpoint_path=None):
+    def __init__(self, config: Config, checkpoint_path: Optional[str] = None):
         super(Model, self).__init__()
         regularizer = keras.regularizers.l2(config.embedding_regularization_coef)
         if config.use_pretrained_embeddings:
@@ -70,7 +73,7 @@ class Model(keras.Model):
         dense_regularizer = keras.regularizers.l2(config.dense_regularization_coef)
         if config.use_word_level_embeddings:
             if checkpoint_path is None:
-                weights = _load_word_embeddings()[1]
+                weights = _load_word_embeddings(config.glove_vocab_size)[1]
                 embed_init = Constant(weights)
             else:
                 embed_init = None
@@ -80,6 +83,7 @@ class Model(keras.Model):
                                                   trainable=False,
                                                   mask_zero=True)
             self.word_embedding_dropout = Dropout(config.dense_dropout)
+            self.word_embbedding_attention = SelfAttention(2, 64)
             self.word_dense_h_1 = Dense(config.lstm_size,
                                         activation='relu',
                                         kernel_regularizer=dense_regularizer)
@@ -94,9 +98,11 @@ class Model(keras.Model):
                                         kernel_regularizer=dense_regularizer)
         self.recurrent_layer = LSTM(config.lstm_size,
                                     recurrent_dropout=config.lstm_dropout,
-                                    return_sequences=True)
-        self.attention_layer = SelfAttention(config.attention_num_heads,
-                                             config.attention_head_size)
+                                    return_state=not config.use_attention,
+                                    return_sequences=config.use_attention)
+        if config.use_attention:
+            self.attention_layer = SelfAttention(config.attention_num_heads,
+                                                 config.attention_head_size)
         self.attention_dropout = Dropout(config.dense_dropout)
         self.dense_layer = Dense(config.num_classes * 8,
                                  kernel_regularizer=dense_regularizer,
@@ -117,10 +123,11 @@ class Model(keras.Model):
                                                      self.config.glove_vocab_size)
             word_embedded = tf.concat([self.word_embedding_layer(word_tokens),
                                        self.word_embedding_layer(uncased_word_tokens)],
-                                      axis=-1)
+                                      axis=-1)            
             word_embedded = self.word_embedding_dropout(word_embedded,
                                                         training=training)
-            word_embedded = tf.reduce_mean(word_embedded, axis=-2)
+            # word_embedded = tf.reduce_mean(word_embedded, axis=-2)
+            word_embedded = self.word_embbedding_attention(word_embedded)
             initial_h = self.word_embedding_dropout(self.word_dense_h_1(word_embedded),
                                                     training=training)
             initial_h = self.word_dense_h_2(initial_h)
@@ -131,15 +138,20 @@ class Model(keras.Model):
         else:
             tokens = inputs
             initial_state = None
+
         embedded = self.embedding_layer(tokens)
         recurrent_out = self.recurrent_layer(embedded,
                                              initial_state=initial_state,
                                              training=training)
-        attended = self.attention_layer(recurrent_out,
-                                        training=training)
+
+        if self.config.use_attention:
+            attended = self.attention_layer(recurrent_out,
+                                            training=training)
+        else:
+            _, state_h, state_c = recurrent_out
+            attended = tf.concat([state_h, state_c], axis=-1)
         attended = self.attention_dropout(attended, training=training)
-        # print_op = tf.print(attended)
-        # with tf.control_dependencies([print_op]):
+    
         probs = self.output_layer(self.dense_layer(attended))
         return probs
 
@@ -157,35 +169,6 @@ class Model(keras.Model):
                     input_dict['uncased_word_tokens']]
         else:
             return input_dict['tokens']
-
-
-class SimpleModel(keras.Model):
-    def __init__(self, config):
-        super(SimpleModel, self).__init__()
-        regularizer = keras.regularizers.l2(config.embedding_regularization_coef)
-        self.embedding_layer = Embedding(config.vocab_size,
-                                         config.embedding_size,
-                                         embeddings_regularizer=regularizer,
-                                         mask_zero=True)
-        self.recurrent_layer = LSTM(config.lstm_size, return_state=True)
-        self.concat_layer = Concatenate()
-        dense_regularizer = keras.regularizers.l2(config.dense_regularization_coef)
-        self.dense_layer = Dense(config.num_classes * 8,
-                                 kernel_regularizer=dense_regularizer,
-                                 activation='relu')
-        self.output_layer = Dense(config.num_classes,
-                                  activation=tf.nn.softmax)
-
-    def call(self, inputs):
-        # tokens = inputs['tokens']
-        tokens = inputs
-        embedded = self.embedding_layer(tokens)
-        _, state_1, state_2 = self.recurrent_layer(embedded)
-        recurrent_out = self.concat_layer([state_1, state_2])
-        # print_op = tf.print(tokens)
-        # with tf.control_dependencies([print_op]):
-        probs = self.output_layer(self.dense_layer(recurrent_out))
-        return probs
 
 
 def _get_data_paths():
@@ -210,18 +193,17 @@ def _load_character_embeddings() -> np.ndarray:
 
 
 FULL_GLOVE_VOCAB_SIZE = 2196017
-UNK_TOKEN_IDX = 1
 
 
 def _load_word_embeddings(vocab_size=FULL_GLOVE_VOCAB_SIZE):
     data_paths = _get_data_paths()
     intern_dict = {}
-    embeddings = np.ndarray((vocab_size + 1, 300))
+    embeddings = np.zeros((vocab_size + 1, 300), dtype=np.float32)
     with open(data_paths['word_embedding_path'], mode='r') as f:
         for l in f:
             tokens = l.split(' ')
             word = tokens[0]
-            idx = len(intern_dict) + 1
+            idx = len(intern_dict) + 1  # 0 is the padding token
             if idx >= vocab_size:
                 break
             intern_dict[word] = idx
