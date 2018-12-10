@@ -46,7 +46,6 @@ class SelfAttention(keras.layers.Layer):
                        ord='fro')
         coef = 4e-3
         penalty = coef * tf.square(norm)
-        if training:
-            self.add_loss(tf.reduce_mean(penalty), inputs=inputs)
+        self.add_loss(tf.reduce_mean(penalty), inputs=inputs)
 
         return tf.layers.flatten(weighted)
