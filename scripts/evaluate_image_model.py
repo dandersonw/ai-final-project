@@ -4,7 +4,7 @@ import argparse
 import importlib
 import sys
 
-MY_SRC = './src/'
+MY_SRC = '../src/'
 sys.path.append(MY_SRC)
 
 from image_model import densenet121_model
