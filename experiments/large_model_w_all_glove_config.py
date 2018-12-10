@@ -2,8 +2,7 @@ import text_model
 
 features = {'tokens', 'word_tokens', 'uncased_word_tokens'}
 
-config = text_model.Config(lstm_layers=1,
-                           lstm_size=512,
+config = text_model.Config(lstm_size=512,
                            embedding_size=128,
                            use_word_level_embeddings=True,
                            glove_vocab_size=text_model.FULL_GLOVE_VOCAB_SIZE,

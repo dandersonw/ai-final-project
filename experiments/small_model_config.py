@@ -2,8 +2,7 @@ import text_model
 
 features = {'tokens'}
 
-config = text_model.Config(lstm_layers=1,
-                           lstm_size=256,
+config = text_model.Config(lstm_size=256,
                            embedding_size=64,
                            dense_regularization_coef=1e-4,
                            dense_dropout=.5,

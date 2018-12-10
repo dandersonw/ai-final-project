@@ -2,8 +2,7 @@ import text_model
 
 features = {'tokens', 'word_tokens', 'uncased_word_tokens'}
 
-config = text_model.Config(lstm_layers=1,
-                           lstm_size=256,
+config = text_model.Config(lstm_size=256,
                            embedding_size=64,
                            use_word_level_embeddings=True,
                            dense_regularization_coef=1e-4,
