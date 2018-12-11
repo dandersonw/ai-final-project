@@ -32,10 +32,11 @@ def main():
 
 def train_model(training_data, validation_data, checkpoint_path):
     model = densenet121_model(img_rows=IMAGE_DIMS[0], img_cols=IMAGE_DIMS[1], color_type=IMAGE_DIMS[2], num_classes=NUM_CLASSES)
-    early_stopping = tf.keras.callbacks.ModelCheckpoint(checkpoint_path,
+    checkpoint = tf.keras.callbacks.ModelCheckpoint(checkpoint_path,
                                                         save_best_only=True,
                                                         save_weights_only=True,
                                                         verbose=1)
+    early_stopping = tf.keras.callbacks.EarlyStopping(patience=10)
     compilation_kwargs = {'optimizer': tf.keras.optimizers.Adam(clipnorm=5.0),
                           'loss': 'categorical_crossentropy',
                           'metrics': ['accuracy']}
@@ -44,13 +45,13 @@ def train_model(training_data, validation_data, checkpoint_path):
     train_kwargs = {'x': training_data[0]['image'],
                     'y': training_data[1],
                     'validation_data': (validation_data[0]['image'], validation_data[1]),
-                    #'callbacks': [early_stopping],
-                    'verbose': 1,
-                    'steps_per_epoch': 1,
-                    'validation_steps': 1}
+                    'callbacks': [checkpoint, early_stopping],
+                    'verbose': 1}
+                   # 'steps_per_epoch': 1,
+                   # 'validation_steps': 1}
 
-    model.fit(**train_kwargs, epochs=1)
-    model.save_weights(checkpoint_path)
+    model.fit(**train_kwargs, epochs=20)
+    #model.save_weights(checkpoint_path)
     model.load_weights(checkpoint_path)
     
     return model
