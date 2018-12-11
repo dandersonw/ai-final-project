@@ -45,12 +45,12 @@ def train_model(training_data, validation_data, checkpoint_path):
     train_kwargs = {'x': training_data[0]['image'],
                     'y': training_data[1],
                     'validation_data': (validation_data[0]['image'], validation_data[1]),
-                    'callbacks': [checkpoint, early_stopping],
+                    'callbacks': [checkpoint],
                     'verbose': 1}
                    # 'steps_per_epoch': 1,
                    # 'validation_steps': 1}
 
-    model.fit(**train_kwargs, epochs=20)
+    model.fit(**train_kwargs, epochs=30)
     #model.save_weights(checkpoint_path)
     model.load_weights(checkpoint_path)
     
