@@ -73,9 +73,9 @@ def train_model(config, training_data, validation_data, checkpoint_path):
         model.fit(**train_kwargs, epochs=10)
         model.embedding_layer.trainable = True
         model.compile(**compilation_kwargs)
-        model.fit(**train_kwargs, epochs=20)
+        model.fit(**train_kwargs, epochs=40)
     else:
-        model.fit(**train_kwargs, epochs=30)
+        model.fit(**train_kwargs, epochs=50)
 
     model.load_weights(checkpoint_path)
     return model

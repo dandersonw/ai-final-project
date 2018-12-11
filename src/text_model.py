@@ -113,7 +113,7 @@ class Model(keras.Model):
         if checkpoint_path is not None:
             self.load_weights(checkpoint_path)
 
-    def call(self, inputs, training=False):
+    def call(self, inputs, training=False, return_attention_weights=False):
         if self.config.use_word_level_embeddings:
             tokens, word_tokens, uncased_word_tokens = inputs
             tokens = tf.cast(tokens, tf.int64)
@@ -123,7 +123,7 @@ class Model(keras.Model):
                                                      self.config.glove_vocab_size)
             word_embedded = tf.concat([self.word_embedding_layer(word_tokens),
                                        self.word_embedding_layer(uncased_word_tokens)],
-                                      axis=-1)            
+                                      axis=-1)
             word_embedded = self.word_embedding_dropout(word_embedded,
                                                         training=training)
             # word_embedded = tf.reduce_mean(word_embedded, axis=-2)
@@ -146,14 +146,20 @@ class Model(keras.Model):
 
         if self.config.use_attention:
             attended = self.attention_layer(recurrent_out,
-                                            training=training)
+                                            training=training,
+                                            return_attention_weights=return_attention_weights)
+            if return_attention_weights:
+                attended, attention_weights = attended
         else:
             _, state_h, state_c = recurrent_out
             attended = tf.concat([state_h, state_c], axis=-1)
         attended = self.attention_dropout(attended, training=training)
     
         probs = self.output_layer(self.dense_layer(attended))
-        return probs
+        if return_attention_weights:
+            return (probs, attention_weights)
+        else:
+            return probs
 
     def _fixup_tokens(self, tokens, vocab_size):
         # that a cast is necessary is a sign of some bug in Keras I think
