@@ -16,6 +16,7 @@
 /Author (Derick Anderson, Zachary Reiter)}
 \setcounter{secnumdepth}{0}  
 \nocopyright
+\graphicspath{ {./imgs/} }
  \begin{document}
 % The file aaai.sty is the style file for AAAI Press 
 % proceedings, working notes, and technical reports.
@@ -40,7 +41,7 @@ is a card game
 
 
 
-\subsection{Title Based Classification}
+\subsection{Title-based Classification}
 
 The architecture used for title classification
 was a character-level LSTM with self-attention.
@@ -66,6 +67,9 @@ It was shown to enhance peformance on some classification tasks
 (as compared to passing the final state of the LSTM to the output layer)
 and as a bonus permits attractive visualizations
 of which portions of the input sequence contribute to the output.
+
+The optimizer used was Adam \cite{Kingma2014AdamAM}
+with norm-based gradient clipping \cite{Pascanu2012UnderstandingTE}.
 
 \subsubsection{Word Embeddings}
 
@@ -118,16 +122,132 @@ Given the small size of the training data thorough regularization was a must.
 The methods of regularization used were
 L2 regularization on the weights of the dense layers,
 dropout between dense layers,
-recurrent dropout from \cite{Gal2016ATG} in the LSTM,
+recurrent dropout (as described in \cite{Gal2016ATG}) in the LSTM,
 and the penalty described in \cite{Lin2017ASS} for the self-attention layer.
-The coefficient for L2 regularization was 1e-4,
-the rate of dropout 0.5,
-and for the self-attention regularization the coefficient 4e-4.
 Card titles consisted only of ASCII characters;
 the distribution of characters was not particularly sparse
 and so no regularization directly on the character embeddings
 was thought to be necessary.
 No regularization was needed on the word embeddings since they were not trained.
+
+\section{Experiments}
+
+
+\subsection{Title-based Classification}
+
+\begin{table}
+  \centering
+  \caption{Hyperparameters of the final title-based model}
+  \begin{tabular}{r | c | c}
+    Hyperparameter & Value (small) & (large) \\
+    \hline
+    LSTM Size & 256 & 512 \\
+    Character embedding size & 64 & 128 \\
+    Attention, number of heads ($r$) & 3 & 3\\
+    Attention, attention size ($d_a$) & 64 & 128\\
+    Dropout rate & 0.5 & 0.5 \\
+    L2 regularization coef. & 1e-4 & 1e-4 \\
+    Attention regularization coef. & 4e-4 & 4e-4 \\
+    Gradient clipping threshold & 5.0 & 5.0 \\
+  \end{tabular}
+\end{table}
+
+Unfortunately,
+due to time constraints,
+there was not the opportunity for an organized hyperparameter search.
+Instead,
+reasonable values were chosen from experience and the literature
+and only a little local search performed.
+Interestingly the smaller configuration outperformed the larger configuration
+on the reported results.
+That can be attributed partially to noise in the results,
+and also to the danger of overfitting on the small data.
+Either way,
+the smaller model configuration is therefore used for all following analyses.
+It is clear from the results that the lexical knowledge supplied by word vectors
+is very helpful to the model.
+
+\begin{table}
+  \centering
+  \caption{Test scores on all data for different model configurations}
+  \begin{tabular}{r | c | c}
+    Model configuration & Accuracy & Macro-averaged F1 \\
+    \hline
+    Small & 80.6\% &  .642 \\
+    Larger & 79.2\% & .638 \\
+    Character-only & 71.3\% & .523 \\
+    Largest class & 55.6\% & .179 \\
+  \end{tabular}
+\end{table}
+
+It is interesting to compare the speed with which the character-only
+and the full model learned.
+The full model reached its maximum accuracy on the validation set quite quickly,
+whereas it took the character-only model 25 epochs to reach its maximum.
+That the character model can productively learn for 25 epochs
+suggests that either the character information is redundant
+in the presence of word embeddings
+or the full model isn't learning optimally.
+Looking at the distribution of attention intensity
+also suggests that the full model doesn't pay a lot of attention to the characters.
+The attention heads for the character model focus at a few different points,
+the embedding model's attention is much more diffuse
+(except for at the first position,
+where I speculate the first head reports
+the information gained from the initial state).
+
+\begin{figure}
+  \includegraphics[width=.5\textwidth]{training-speed-comparison}
+  \caption{Validation accuracy over time for character-only model vs. full model}
+\end{figure}
+
+\begin{figure}
+  \includegraphics[width=.5\textwidth]{tahngarth-attention-wv}
+  \includegraphics[width=.5\textwidth]{thornscape-attention-wv}
+  \caption{Attention intensity for full model}
+\end{figure}
+
+\begin{figure}
+  \includegraphics[width=.5\textwidth]{tahngarth-attention-char}
+  \includegraphics[width=.5\textwidth]{thornscape-attention-char}
+  \caption{Attention intensity for character-only model}
+\end{figure}
+
+\begin{table}
+  \centering
+  \caption{Macro-averaged F1 by training and testing dataset}
+  \begin{tabular}{r | c | c | c}
+    & \multicolumn{3}{c}{Test dataset}\\
+    \cline{2-4}
+    Train dataset & all & modern & legacy \\
+    \hline
+    all    & .642 & .643 & .645 \\
+    modern & .602 & .643 & .573 \\
+    legacy & .622 & .597 & .639 \\
+  \end{tabular}
+\end{table}
+
+\begin{table}
+  \centering
+  \caption{Accuracy by training and testing dataset}
+  \begin{tabular}{r | c | c | c}
+    & \multicolumn{3}{c}{Test dataset}\\
+    \cline{2-4}
+    Train dataset & all & modern & legacy \\
+    \hline
+    all    & 80.6\% & 81.2\% & 80.1\% \\
+    modern & 76.0\% & 78.3\% & 74.1\% \\
+    legacy & 76.4\% & 75.1\% & 77.0\% \\
+  \end{tabular}
+\end{table}
+
+As predicted from the beginning,
+training on one of the genres of data
+and testing on the other genre leads to reduced performance.
+It appears that training on the legacy cards
+transfers more easily to the modern cards
+than vice-versa,
+to the tune of a few points of accuracy.
 
 
 \bibliography{doc}
