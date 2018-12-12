@@ -36,6 +36,100 @@ magic!
 
 is a card game
 
+\section{Project Description}
+
+
+
+\subsection{Title Based Classification}
+
+The architecture used for title classification
+was a character-level LSTM with self-attention.
+The LSTM \cite{Hochreiter1997LongSM} is a recurrent neural network architecture
+that is frequently and effectively \cite{Schmidhuber2015DeepLI}
+used to process text data.
+Because it is such a well known architecture
+we will not reproduce here its fundamental structure.
+We will discuss the extensions to the basic LSTM that were used.
+
+The LSTM was character-level,
+which means that timesteps were taken to be each character in the title.
+The characters were embedded in vector space
+before being passed into the LSTM as input.
+The character embeddings were learned from scratch
+in a fully end-to-end manner.
+
+Attention is a mechanism for combining a sequence of values into a single value
+with learnable parameters.
+We use the multi-headed self-attention mechanism from \cite{Lin2017ASS}
+over the outputs of the LSTM and before our output layer.
+It was shown to enhance peformance on some classification tasks
+(as compared to passing the final state of the LSTM to the output layer)
+and as a bonus permits attractive visualizations
+of which portions of the input sequence contribute to the output.
+
+\subsubsection{Word Embeddings}
+
+In one variation of the model
+the initial state of the LSTM
+is created from the embeddings of words in the title.
+We used pre-trained GloVe \cite{Pennington2014GloveGV} embeddings,
+specifically the 840B token Common Crawl set
+available for download from the Stanford NLP group's website
+\footnote{https://nlp.stanford.edu/projects/glove/}.
+Using pre-trained word embeddings
+was motivated by the need for lexical knowledge in classifying titles.
+On an intuitive level many titles for creatures
+contain words that describe people/animals etc,
+and the other categories likewise often have informative English words.
+
+We combine sequences of word embeddings with a small self-attention layer.
+That set of word embeddings is case-sensitive,
+so we concatenate the attended result of embedding
+the word-level tokens of the title as-is
+and the tokens converted to lower case.
+Card titles are title cased,
+so it was helpful to get the embedding of common nouns in the title
+in their lower cased form.
+For example,
+``Merfolk Looter''
+has a more informative (and more likely to be in the vocabulary)
+embedding for ``looter'' than for ``Looter''.
+
+The GloVe data we downloaded has a vocabulary of over 2 million ``words'',
+but we use only the embeddings representing the most common 200,000.
+On a practical computational level,
+it is difficult to incorporate such large matrices into a model.
+On another level,
+it was observed that many MtG-specific proper nouns are in the full vocabulary.
+Insofar as Magic: The Gathering is a popular topic online and the word embeddings
+are based on web crawl data that only makes sense.
+However,
+it was considered not quite in the spirit of the task
+for MtG-specific proper nouns to be in-vocabulary.
+A selection of the most common MtG-specific proper nouns were investigated
+and found to be below the 200,000th most common mark.
+More general myth-related or fantastical terms (e.g. ``elf'', ``merfolk'')
+largely remained in the vocabulary.
+Out-of-vocabulary terms were assigned a randomly initialized embedding.
+
+\subsubsection{Regularization}
+
+Given the small size of the training data thorough regularization was a must.
+The methods of regularization used were
+L2 regularization on the weights of the dense layers,
+dropout between dense layers,
+recurrent dropout from \cite{Gal2016ATG} in the LSTM,
+and the penalty described in \cite{Lin2017ASS} for the self-attention layer.
+The coefficient for L2 regularization was 1e-4,
+the rate of dropout 0.5,
+and for the self-attention regularization the coefficient 4e-4.
+Card titles consisted only of ASCII characters;
+the distribution of characters was not particularly sparse
+and so no regularization directly on the character embeddings
+was thought to be necessary.
+No regularization was needed on the word embeddings since they were not trained.
+
+
 \bibliography{doc}
 \bibliographystyle{aaai}
 
