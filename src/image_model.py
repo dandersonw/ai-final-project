@@ -15,7 +15,7 @@ import data
 from pathlib import Path
 import os
 
-def densenet121_model(img_rows, img_cols, color_type=1, nb_dense_block=4, growth_rate=32, nb_filter=64, reduction=0.5, dropout_rate=0.0, weight_decay=1e-4, num_classes=None):
+def densenet121_model(img_rows, img_cols, color_type=1, use_trained_weights=True, nb_dense_block=4, growth_rate=32, nb_filter=64, reduction=0.5, dropout_rate=0.0, weight_decay=1e-4, num_classes=None):
     '''
     DenseNet 121 Model for Keras
     Model Schema is based on
@@ -81,9 +81,10 @@ def densenet121_model(img_rows, img_cols, color_type=1, nb_dense_block=4, growth
     model = Model(img_input, x_fc, name='densenet')
 
     # Use pre-trained weights for Tensorflow backend
-    weights_path = os.environ['AI_RESOURCE_PATH'] + 'densenet121_weights_tf.h5'
+    if use_trained_weights:
+        weights_path = os.environ['AI_RESOURCE_PATH'] + 'densenet121_weights_tf.h5'
 
-    model.load_weights(weights_path, by_name=True)
+        model.load_weights(weights_path, by_name=True)
 
     # Truncate and replace softmax layer for transfer learning
     # Cannot use model.layers.pop() since model is not of Sequential() type
