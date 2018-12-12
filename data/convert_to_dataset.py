@@ -29,6 +29,12 @@ def convert_data(output_path, status, sql):
             print("wrote", counter, "of", data_size)
             counter += 1
 
+large_dev_sql = "select * from large_dev_card_table where experiment_status = %s"
+print("starting large dev")
+convert_data("./tfrecord/large_dev_testing_data.tfrecord", "TESTING", large_dev_sql)
+convert_data("./tfrecord/large_dev_training_data.tfrecord", "TRAINING", large_dev_sql)
+convert_data("./tfrecord/large_dev_validation_data.tfrecord", "VALIDATION", large_dev_sql)
+
 dev_sql = "select * from dev_card_table where experiment_status = %s"
 print("starting dev")
 convert_data("./tfrecord/dev_testing_data.tfrecord", "TESTING", dev_sql)
