@@ -7,6 +7,7 @@
 \usepackage{courier}  %Required
 \usepackage{url}  %Required
 \usepackage{graphicx}  %Required
+\usepackage{fixltx2e} %Required
 \frenchspacing  %Required
 \setlength{\pdfpagewidth}{8.5in}  %Required
 \setlength{\pdfpageheight}{11in}  %Required
@@ -14,11 +15,11 @@
   \pdfinfo{
 /Title (Title and Image Based Classification of Magic: The Gathering Cards)
 /Author (Derick Anderson, Zachary Reiter)}
-\setcounter{secnumdepth}{0}  
+\setcounter{secnumdepth}{0}
 \nocopyright
 \graphicspath{ {./imgs/} }
  \begin{document}
-% The file aaai.sty is the style file for AAAI Press 
+% The file aaai.sty is the style file for AAAI Press
 % proceedings, working notes, and technical reports.
 %
 \title{Title and Image Based Classification of Magic: The Gathering Cards}
@@ -37,9 +38,42 @@ magic!
 
 is a card game
 
+\section{Related Work}
+
+Image classification is a popular application of neural networks,
+and there are several general solutions that already exist. We wanted to start with an
+image classification model and tune the implementation and training parameters
+to see if the current state of the art models were sufficient for this task.
+We looked at InceptionV3 which looked promising, but we decided against it
+because we felt the resources it demanded would be beyond what we were able to
+obtain \cite{SzegedyChristian2015RtIA}. We looked into smaller models that used fewer
+parameters and so would require less memory for storing weights. We found the
+DenseNet architecture, which won the best Paper Award at CVPR in
+2017 \cite{huang2017densely}. The main paradigm is that each layer is connected to each
+other layer in a feed forward fashion within a Dense block which consists of
+convolutions and pooling operations \cite{huang2017densely}.
+
+\begin{figure}
+  \includegraphics[width=.5\textwidth]{densenet}
+  \caption{Illustration of the DenseNet architecture, from \cite{PleissGeoff2017MIoD}}
+\end{figure}
+
+According to their experiments, it yields competitive accuracy while using less
+than half of the parameters used by other architectures like ResNet. It looked
+promising, but we wanted to find evidence that it was useful practically as
+well. In 2018 Rajaraman, Antani, Poostchi, Silamut, Hossain, Maude, Jaeger,
+and Thoma used the DenseNet-121 implementation in their research using CNN’s
+to detect malaria parasites in blood smears \cite{RajaramanSivaramakrishnan2018Pcnn}.
+We located an MIT
+licensed implementation of DenseNet-121 at
+https://github.com/flyyufelix/DenseNet-Keras and decided this would be our
+default model for image classification [cite web source?]. It included a set of
+weights pre-trained on the ImageNet data set as well, meaning we could compare
+fine tuning this model on our data against training the model on our data from
+scratch. The model implementation and our code uses Keras as a high level
+interface for working with Tensorflow models \cite{chollet2015keras}.
+
 \section{Project Description}
-
-
 
 \subsection{Title-based Classification}
 
@@ -135,6 +169,25 @@ the distribution of characters was not particularly sparse
 and so no regularization directly on the character embeddings
 was thought to be necessary.
 No regularization was needed on the word embeddings since they were not trained.
+
+\subsection{Image-based Classification}
+
+We used a DenseNet-121 model for image classification and experimented with
+tuning the training parameters and optimizers to achieve the best result.
+DenseNet-121 uses the output of each dense block layer as an input to each
+subsequent dense block [DenseNet, 2]. This is different from traditional
+convolutional feed-forward networks. Let’s an image x\textsubscript{0} is passed through a
+convolutional network of L layers which each have a transformation H\textsubscript{l}, where l
+is the layer number [DenseNet, 2]. Traditional networks have the formula
+x\textsubscript{l} = H\textsubscript{l}(x\textsubscript{l}-1), but DenseNet-121 looks more like:
+
+\begin{center}
+  \includegraphics[width=.3\textwidth]{densenet-formula}
+\end{center}
+
+We wanted to see how well suited this model was for the task of classifying Magic cards,
+but we experimented with several optimization and training configurations,
+outlined below.
 
 \section{Experiments}
 
@@ -264,6 +317,105 @@ The confusion matrix matches our intuitions fairly well.
 The two classes with the largest confusion are spell and enchantment,
 which while distinct in the game mechanics
 are certainly the semantically closest in an abstract sense.
+
+\subsection{Image-based Classification}
+
+We focused on the following variables to alter in order to affect performance:
+number of epochs, learning rate reduction, optimizer type
+(Adam or Stochastic Gradient Descent), optimizer configuration (decay rate,
+descent momentum), early stopping, and image scaling.
+We first got a baseline performance for each model using the following
+configurations: 20 epochs, no learning rate reduction, Adam optimizer,
+no decay rate, no early stopping, image size 50x50. The performance of this can
+be see in Figure ~\ref{fig:baseline}
+
+\begin{figure}
+  \includegraphics[width=.5\textwidth]{baseline-accuracy}
+  \includegraphics[width=.5\textwidth]{baseline-loss}
+  \caption{Top: Prediction accuracy of the baseline. Bottom: Prediction loss of the baseline}
+  \label{fig:baseline}
+\end{figure}
+
+This immediately confirmed our hypothesis that since Modern is the data set
+with the most consistent art, the highest accuracy came from the model trained
+on the Modern set evaluating the Modern testing set. It also follows that the
+model trained on all cards would have more consistent across all
+testing conditions. It was more unexpected that the model trained on Legacy
+data performed best on the Modern testing data and worst on Legacy data. Poor
+performance in general combined with this observation suggests that the art
+within the Legacy set is more varied than we had anticipated.
+We then wanted to run experiments with the goal of improving accuracy. Due to
+the large size of these datasets and the time it takes to train a model, we
+could not afford to train them experimentally. We created a development dataset
+consisting of 700 cards from the Modern dataset, since it seemed to be our best
+dataset for achieving good performance. Our hypothesis was that improving results
+for this dataset would improve results when the full models were trained. The
+performance for this baseline can be found in Figure ~\ref{fig:best} when it is being compared
+to the performance of the best configuration we found.
+During the experiments we noticed training behavior exhibited in Figure ~\ref{fig:overfitting}
+
+\begin{figure}[h!]
+  \includegraphics[width=.5\textwidth]{overfitting}
+  \caption{Curves showing how the model went into overfitting after epoch 16}
+  \label{fig:overfitting}
+\end{figure}
+
+Between epochs 16 and 21 training loss and validation accuracy plummet while
+training accuracy improves and validation loss spikes before recovering. We
+interpreted this as overfitting behavior and realized that we were wasting
+training time during overfitting epochs because they would not improve the
+validation loss. To combat this, we introduced a learning rate reduction
+callback which decreased the learning rate if the validation loss does not
+improve over a certain number of epochs. After some testing, we realized the
+ideal configuration for this was to reduce learning rate by a factor of 10 each
+time 5 epochs passed with no improvement, down to a minimum learning rate of
+1e-5. We begin the learning rate at 1e-3.
+After introducing this to our trials, we noticed marked improvement for our
+development set. The best configuration we found was: 30 epochs, learning rate
+reduction, SGD optimizer (1e-6 decay, .7 momentum), early stopping after 10
+epochs, and image size 300x240. The results of these setting compared
+to the baseline can be seen in Figure ~\ref{fig:best}
+
+\begin{figure}
+  \includegraphics[width=.5\textwidth]{best-accuracy}
+  \includegraphics[width=.5\textwidth]{best-loss}
+  \caption{Comparisons of the optimal performance to the baseline with accuracy on top and loss on the bottom.}
+  \label{fig:best}
+\end{figure}
+
+We used these settings on the full data sets and got the following results in Figure ~\ref{fig:bestoverall}
+
+\begin{figure}
+  \includegraphics[width=.5\textwidth]{best-overall}
+  \caption{The three groupings on the left represent models trained using the best configuration.
+  The three on the right are using the baseline configuration. For both groupings the lines represent
+  models trained all All data, Modern data, and Legacy data, in that order. There is improvement
+  for every test category for every model except for the model trained on Modern data and applied to Modern data.}
+  \label{fig:bestoverall}
+\end{figure}
+
+Unfortunately, the optimizations made during the experiments did not translate
+into significant improvement for the full-scale models. Although we had similar
+loss values and on average slightly better accuracies, this could be due to
+noise during the training of the model and so we cannot claim that these changes
+affected the performance of the model.
+
+\section{Conclusion}
+
+Due to the poor performance of our model in terms of classifying images, we
+conclude that DenseNet-121 is not a sufficient architecture for classifying
+Magic card type by card art. After running several experiments to increase
+performance on experimental sets of data, we did not find a proportional
+increase in performance when these methods were transferred over to the full
+data sets. If we had more time and computing resources, we might have tried
+another architecture such as InceptionV3 to compare which would have given us
+a better idea about wider capabilities of neural networks regarding the
+classification of magic cards by card art. It could be possible that the art of
+Magic cards is so complex and varied that it is a difficult task for any neural
+network, but this would require the evaluation of several more architectures to
+be proven. Either way, we determined that our text-based classifier for names
+was better suited for this task than our image classifier.
+
 
 \bibliography{doc}
 \bibliographystyle{aaai}
