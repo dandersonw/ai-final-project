@@ -68,7 +68,7 @@ def train_model(config, training_data, validation_data, checkpoint_path):
                     'validation_data': (model.extract_inputs_from_dict(validation_data[0]),
                                         validation_data[1]),
                     'callbacks': [checkpoint, early_stopping]}
-    
+
     if config.use_pretrained_embeddings:
         model.fit(**train_kwargs, epochs=10)
         model.embedding_layer.trainable = True

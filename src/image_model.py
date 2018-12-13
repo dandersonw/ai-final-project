@@ -13,8 +13,9 @@ import tensorflow.keras.backend as K
 from data import IMAGE_DIMS, NUM_CLASSES
 import data
 from pathlib import Path
+import os
 
-def densenet121_model(img_rows, img_cols, color_type=1, nb_dense_block=4, growth_rate=32, nb_filter=64, reduction=0.5, dropout_rate=0.0, weight_decay=1e-4, num_classes=None):
+def densenet121_model(img_rows, img_cols, color_type=1, use_trained_weights=True, nb_dense_block=4, growth_rate=32, nb_filter=64, reduction=0.5, dropout_rate=0.0, weight_decay=1e-4, num_classes=None):
     '''
     DenseNet 121 Model for Keras
     Model Schema is based on
@@ -80,9 +81,10 @@ def densenet121_model(img_rows, img_cols, color_type=1, nb_dense_block=4, growth
     model = Model(img_input, x_fc, name='densenet')
 
     # Use pre-trained weights for Tensorflow backend
-    weights_path = './images/densenet121_weights_tf.h5'
+    if use_trained_weights:
+        weights_path = os.environ['AI_RESOURCE_PATH'] + 'densenet121_weights_tf.h5'
 
-    model.load_weights(weights_path, by_name=True)
+        model.load_weights(weights_path, by_name=True)
 
     # Truncate and replace softmax layer for transfer learning
     # Cannot use model.layers.pop() since model is not of Sequential() type
@@ -195,13 +197,13 @@ def dense_block(x, stage, nb_layers, nb_filter, growth_rate, dropout_rate=None, 
 if __name__ == '__main__':
     print("starting main")
     # tuning vars
-    batch_size = 16
-    nb_epoch = 10
+    batch_size = 1
+    nb_epoch = 1
 
     DATA_DIR = Path('../data/tfrecord')
-    TRAIN_DATA_PATH = DATA_DIR / 'training_data.tfrecord'
-    VALIDATION_DATA_PATH = DATA_DIR / 'validation_data.tfrecord'
-    TEST_DATA_PATH = DATA_DIR / 'testing_data.tfrecord'
+    TRAIN_DATA_PATH = DATA_DIR / 'dev_training_data.tfrecord'
+    VALIDATION_DATA_PATH = DATA_DIR / 'dev_validation_data.tfrecord'
+    TEST_DATA_PATH = DATA_DIR / 'dev_testing_data.tfrecord'
 
     training_data = data.make_dataset(str(TRAIN_DATA_PATH))
     validation_data = data.make_dataset(str(VALIDATION_DATA_PATH))
@@ -212,11 +214,10 @@ if __name__ == '__main__':
     # Start Fine-tuning
     model.fit(training_data,
               epochs=nb_epoch,
-              steps_per_epoch=111,
-              validation_steps=11,
+              steps_per_epoch=1,
+              validation_steps=1,
               verbose=1,
-              validation_data=(validation_data),
-              )
+              validation_data=(validation_data))
 
     # Make predictions
     predictions_valid = model.predict(validation_data, batch_size=batch_size, verbose=1)
